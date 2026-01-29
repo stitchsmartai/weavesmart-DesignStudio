@@ -18,14 +18,24 @@ function DesignLibrary({
   selectedMotifs,
   setSelectedMotifs,
 }) {
+  const handleTemplateSelect = (colors) => {
+    setBodyColor(colors.bodyColor);
+    setBorderColor(colors.borderColor);
+    setPalluColor(colors.palluColor);
+  };
+
   return (
     <div className="w-96 bg-white border-r border-gray-200 overflow-y-auto">
       <div className="p-6 space-y-6">
         <h2 className="text-lg font-bold text-gray-800">Design Library</h2>
-        
-        <Templates />
+
+        <Templates onTemplateSelect={handleTemplateSelect} />
         <SareeType sareeType={sareeType} setSareeType={setSareeType} />
-        <MotifLibrary selectedMotifs={selectedMotifs} setSelectedMotifs={setSelectedMotifs} />
+        <MotifLibrary
+          selectedMotifs={selectedMotifs}
+          setSelectedMotifs={setSelectedMotifs}
+          onMotifDragStart={(motif) => console.log('Dragging:', motif.name)}
+        />
         <PalluSelector />
         <BorderSelector />
         <ColorPalette

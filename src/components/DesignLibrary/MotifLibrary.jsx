@@ -1,27 +1,22 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Flower, Flower2, Leaf, Bird, Sparkles, Heart, Star, Sun, Moon, Zap } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
-function MotifLibrary({ selectedMotifs, setSelectedMotifs }) {
-  const [isOpen, setIsOpen] = useState(true);
+function MotifLibrary({ selectedMotifs, setSelectedMotifs, onMotifDragStart }) {
+  const [isOpen, setIsOpen] = useState(false);
 
   const motifs = [
-    { id: 1, name: 'Floral', icon: Flower, color: 'text-pink-500' },
-    { id: 2, name: 'Lotus', icon: Flower2, color: 'text-purple-500' },
-    { id: 3, name: 'Paisley', icon: Leaf, color: 'text-green-500' },
-    { id: 4, name: 'Peacock', icon: Bird, color: 'text-blue-500' },
-    { id: 5, name: 'Sparkle', icon: Sparkles, color: 'text-yellow-500' },
-    { id: 6, name: 'Heart', icon: Heart, color: 'text-red-500' },
-    { id: 7, name: 'Star', icon: Star, color: 'text-amber-500' },
-    { id: 8, name: 'Sun', icon: Sun, color: 'text-orange-500' },
-    { id: 9, name: 'Moon', icon: Moon, color: 'text-indigo-500' },
-    { id: 10, name: 'Zari', icon: Zap, color: 'text-yellow-600' },
+    { id: 1, name: 'Paisley', thumbnail: '/motifs/paisley.png', svg: '/motifs/paisley.svg' },
+    { id: 2, name: 'Peacock Simple', thumbnail: '/motifs/peacock-simple.png', svg: '/motifs/peacock-simple.svg' },
+    { id: 3, name: 'Peacock Detailed', thumbnail: '/motifs/peacock-detailed.png', svg: '/motifs/peacock-detailed.svg' },
+    { id: 4, name: 'Flower Bouquet', thumbnail: '/motifs/flower-bouquet.png', svg: '/motifs/flower-bouquet.svg' },
+    { id: 5, name: 'Leaf Branch', thumbnail: '/motifs/leaf-branch.png', svg: '/motifs/leaf-branch.svg' },
   ];
 
-  const handleMotifClick = (motifId) => {
-    if (selectedMotifs.includes(motifId)) {
-      setSelectedMotifs(selectedMotifs.filter(id => id !== motifId));
-    } else {
-      setSelectedMotifs([...selectedMotifs, motifId]);
+  const handleDragStart = (e, motif) => {
+    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData('application/json', JSON.stringify(motif));
+    if (onMotifDragStart) {
+      onMotifDragStart(motif);
     }
   };
 
@@ -36,26 +31,31 @@ function MotifLibrary({ selectedMotifs, setSelectedMotifs }) {
       </button>
 
       {isOpen && (
-        <div className="p-4 pt-0 grid grid-cols-5 gap-2">
-          {motifs.map((motif) => {
-            const IconComponent = motif.icon;
-            const isSelected = selectedMotifs.includes(motif.id);
-            
-            return (
-              <button
+        <div className="p-4 pt-0">
+          <p className="text-xs text-gray-500 mb-3">
+            💡 Drag motifs onto the saree body to place them
+          </p>
+          <div className="grid grid-cols-3 gap-3">
+            {motifs.map((motif) => (
+              <div
                 key={motif.id}
-                onClick={() => handleMotifClick(motif.id)}
-                className={`aspect-square rounded-lg border-2 flex items-center justify-center transition ${
-                  isSelected
-                    ? 'border-purple-600 bg-purple-50'
-                    : 'border-gray-200 hover:border-gray-300 bg-white'
-                }`}
+                draggable
+                onDragStart={(e) => handleDragStart(e, motif)}
+                className="aspect-square rounded-lg border-2 border-gray-200 hover:border-purple-400 bg-white p-2 cursor-move transition group"
                 title={motif.name}
               >
-                <IconComponent className={`w-6 h-6 ${motif.color}`} />
-              </button>
-            );
-          })}
+                <img
+                  src={motif.thumbnail}
+                  alt={motif.name}
+                  className="w-full h-full object-contain"
+                  draggable={false}
+                />
+                <div className="text-xs text-center mt-1 text-gray-600 opacity-0 group-hover:opacity-100 transition truncate">
+                  {motif.name}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

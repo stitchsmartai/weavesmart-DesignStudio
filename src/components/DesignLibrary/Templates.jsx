@@ -1,14 +1,45 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
-function Templates() {
-  const [isOpen, setIsOpen] = useState(true);
+function Templates({ onTemplateSelect }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
 
   const templates = [
-    { id: 1, name: 'Traditional Red', colors: ['#DC2626', '#F59E0B'] },
-    { id: 2, name: 'Royal Blue', colors: ['#1E40AF', '#FCD34D'] },
-    { id: 3, name: 'Golden Elegance', colors: ['#F59E0B', '#DC2626'] },
+    {
+      id: 1,
+      name: 'Traditional Red',
+      bodyColor: '#DC2626',
+      borderColor: '#F59E0B',
+      palluColor: '#FFC0CB',
+      gradient: ['#DC2626', '#F59E0B']
+    },
+    {
+      id: 2,
+      name: 'Royal Blue',
+      bodyColor: '#1E40AF',
+      borderColor: '#FCD34D',
+      palluColor: '#E0E7FF',
+      gradient: ['#1E40AF', '#FCD34D']
+    },
+    {
+      id: 3,
+      name: 'Golden Elegance',
+      bodyColor: '#F59E0B',
+      borderColor: '#DC2626',
+      palluColor: '#FEF3C7',
+      gradient: ['#F59E0B', '#DC2626']
+    },
   ];
+
+  const handleTemplateClick = (template) => {
+    setSelectedTemplate(template.id);
+    onTemplateSelect({
+      bodyColor: template.bodyColor,
+      borderColor: template.borderColor,
+      palluColor: template.palluColor,
+    });
+  };
 
   return (
     <div className="border border-gray-200 rounded-lg">
@@ -25,12 +56,16 @@ function Templates() {
           {templates.map((template) => (
             <button
               key={template.id}
-              className="aspect-square rounded-lg overflow-hidden border-2 border-gray-200 hover:border-purple-600 transition group"
+              onClick={() => handleTemplateClick(template)}
+              className={`aspect-square rounded-lg overflow-hidden border-2 transition group ${selectedTemplate === template.id
+                ? 'border-purple-600 ring-2 ring-purple-200'
+                : 'border-gray-200 hover:border-purple-400'
+                }`}
             >
               <div
                 className="h-full w-full"
                 style={{
-                  background: `linear-gradient(135deg, ${template.colors[0]} 0%, ${template.colors[1]} 100%)`,
+                  background: `linear-gradient(135deg, ${template.gradient[0]} 0%, ${template.gradient[1]} 100%)`,
                 }}
               >
                 <div className="h-full w-full flex items-end p-2 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition">

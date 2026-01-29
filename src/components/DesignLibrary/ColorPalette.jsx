@@ -9,7 +9,7 @@ function ColorPalette({
   palluColor,
   setPalluColor,
 }) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <div className="border border-gray-200 rounded-lg">

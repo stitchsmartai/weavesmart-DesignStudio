@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 function BorderSelector() {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [selected, setSelected] = useState(1);
 
   const borderOptions = [
@@ -27,11 +27,10 @@ function BorderSelector() {
             <button
               key={option.id}
               onClick={() => setSelected(option.id)}
-              className={`h-20 rounded-lg border-2 transition ${
-                selected === option.id
-                  ? 'border-purple-600 ring-2 ring-purple-200'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
+              className={`h-20 rounded-lg border-2 transition ${selected === option.id
+                ? 'border-purple-600 ring-2 ring-purple-200'
+                : 'border-gray-200 hover:border-gray-300'
+                }`}
             >
               <div
                 className="h-full w-full rounded-md"
