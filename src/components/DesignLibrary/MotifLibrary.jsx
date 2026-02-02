@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { getAllMotifs, getCategories } from '../../utils/motifLoader';
 
 function MotifLibrary({ selectedMotifs, setSelectedMotifs, onMotifDragStart }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
-  const motifs = [
-    { id: 1, name: 'Paisley', thumbnail: '/motifs/paisley.png', svg: '/motifs/paisley.svg' },
-    { id: 2, name: 'Peacock Simple', thumbnail: '/motifs/peacock-simple.png', svg: '/motifs/peacock-simple.svg' },
-    { id: 3, name: 'Peacock Detailed', thumbnail: '/motifs/peacock-detailed.png', svg: '/motifs/peacock-detailed.svg' },
-    { id: 4, name: 'Flower Bouquet', thumbnail: '/motifs/flower-bouquet.png', svg: '/motifs/flower-bouquet.svg' },
-    { id: 5, name: 'Leaf Branch', thumbnail: '/motifs/leaf-branch.png', svg: '/motifs/leaf-branch.svg' },
-  ];
+  // Auto-load all motifs and categories
+  const allMotifs = getAllMotifs();
+  const categories = getCategories();
+
+  // Filter motifs based on selected category
+  const displayedMotifs = selectedCategory === 'all'
+    ? allMotifs
+    : allMotifs.filter(m => m.category === selectedCategory);
 
   const handleDragStart = (e, motif) => {
     e.dataTransfer.effectAllowed = 'copy';
@@ -35,8 +38,35 @@ function MotifLibrary({ selectedMotifs, setSelectedMotifs, onMotifDragStart }) {
           <p className="text-xs text-gray-500 mb-3">
             💡 Drag motifs onto the saree body to place them
           </p>
+
+          {/* Category Tabs */}
+          <div className="flex flex-wrap gap-2 mb-4 pb-3 border-b border-gray-200">
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${selectedCategory === 'all'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+            >
+              All ({allMotifs.length})
+            </button>
+            {categories.map(category => (
+              <button
+                key={category.id}
+                onClick={() => setSelectedCategory(category.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${selectedCategory === category.id
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+              >
+                {category.name} ({category.count})
+              </button>
+            ))}
+          </div>
+
+          {/* Motif Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-w-full">
-            {motifs.map((motif) => (
+            {displayedMotifs.map((motif) => (
               <div
                 key={motif.id}
                 draggable
@@ -140,17 +170,19 @@ function MotifLibrary({ selectedMotifs, setSelectedMotifs, onMotifDragStart }) {
                 title={motif.name}
               >
                 <img
-                  src={motif.thumbnail}
+                  src={motif.svg}
                   alt={motif.name}
                   className="w-full h-full object-contain"
-                  draggable={false}
                 />
-                <div className="text-xs text-center mt-1 text-gray-600 opacity-0 group-hover:opacity-100 transition truncate">
-                  {motif.name}
-                </div>
               </div>
             ))}
           </div>
+
+          {displayedMotifs.length === 0 && (
+            <div className="text-center py-8 text-gray-400 text-sm">
+              No motifs in this category
+            </div>
+          )}
         </div>
       )}
     </div>
