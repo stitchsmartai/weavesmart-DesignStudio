@@ -8,7 +8,10 @@ function MotifCanvas({ bodyColor }) {
   const containerRef = useRef(null);
   const [selectedMotif, setSelectedMotif] = useState(null);
   const [motifCount, setMotifCount] = useState(0);
-  const [showInstructions, setShowInstructions] = useState(true);
+  const [showInstructions, setShowInstructions] = useState(() => {
+    const saved = localStorage.getItem('hideMotifInstructions');
+    return saved !== 'true';
+  });
 
   // Initialize Fabric.js canvas
   useEffect(() => {
@@ -70,6 +73,22 @@ function MotifCanvas({ bodyColor }) {
 
     return () => {
       canvas.dispose();
+    };
+  }, []);
+
+  // Listen for mobile touch drop events
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleTouchDrop = (e) => {
+      const { motif, x, y } = e.detail;
+      addMotifToCanvas(motif, x, y);
+    };
+
+    canvas.addEventListener('motifTouchDrop', handleTouchDrop);
+    return () => {
+      canvas.removeEventListener('motifTouchDrop', handleTouchDrop);
     };
   }, []);
 
@@ -189,20 +208,39 @@ function MotifCanvas({ bodyColor }) {
 
       {/* Instructions Notification (only when motif selected) */}
       {selectedMotif && showInstructions && (
-        <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-white border border-gray-300 rounded-lg shadow-lg px-4 py-2 text-xs text-gray-600 flex items-center space-x-3 z-10">
-          <span>💡 Drag corners to resize • Drag to move • Delete key to remove</span>
-          <button
-            onClick={() => setShowInstructions(false)}
-            className="text-gray-400 hover:text-gray-600 font-medium"
-          >
-            ✕
-          </button>
+        <div className="absolute top-4 right-4 bg-white border border-purple-200 rounded-lg shadow-xl px-4 py-3 text-sm text-gray-700 max-w-xs z-10">
+          <div className="flex items-start space-x-2">
+            <span className="text-lg">💡</span>
+            <div className="flex-1">
+              <p className="font-medium text-gray-800 mb-1">Motif Controls</p>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Drag corners to resize • Drag to move • Delete key to remove
+              </p>
+              <div className="mt-3 flex items-center justify-between">
+                <button
+                  onClick={() => {
+                    localStorage.setItem('hideMotifInstructions', 'true');
+                    setShowInstructions(false);
+                  }}
+                  className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                >
+                  Don't show again
+                </button>
+                <button
+                  onClick={() => setShowInstructions(false)}
+                  className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Motif Controls Bar (only when selected) */}
       {selectedMotif && (
-        <div className="absolute bottom-2 right-2 bg-white border border-gray-300 rounded-lg shadow-lg px-3 py-2 flex items-center space-x-3 z-10">
+        <div className="motif-controls absolute bottom-2 right-2 bg-white border border-gray-300 rounded-lg shadow-lg px-2 py-1.5 md:px-3 md:py-2 flex items-center space-x-2 md:space-x-3 z-10 scale-75 md:scale-100 origin-bottom-right transition-opacity duration-200">
           <span className="text-xs text-gray-600">
             <span className="font-semibold text-gray-800">{selectedMotif.motifName}</span>
           </span>
@@ -229,10 +267,10 @@ function MotifCanvas({ bodyColor }) {
 
       {/* Clear All Button */}
       {motifCount > 0 && !selectedMotif && (
-        <div className="absolute bottom-2 right-2 z-10">
+        <div className="motif-controls absolute top-2 left-1/2 -translate-x-1/2 z-10 transition-opacity duration-200">
           <button
             onClick={clearAllMotifs}
-            className="flex items-center space-x-2 px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg transition text-sm shadow-lg"
+            className="flex items-center space-x-1.5 md:space-x-2 px-2 py-1.5 md:px-3 md:py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg transition text-xs md:text-sm shadow-lg scale-75 md:scale-100"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Clear All</span>

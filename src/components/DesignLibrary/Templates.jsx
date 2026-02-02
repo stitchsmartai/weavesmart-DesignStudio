@@ -52,7 +52,7 @@ function Templates({ onTemplateSelect }) {
       </button>
 
       {isOpen && (
-        <div className="p-4 pt-0 grid grid-cols-3 gap-3">
+        <div className="p-4 pt-0 grid grid-cols-2 md:grid-cols-3 gap-3 max-w-full">
           {templates.map((template) => (
             <button
               key={template.id}

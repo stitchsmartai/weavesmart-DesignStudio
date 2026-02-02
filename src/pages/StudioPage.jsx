@@ -137,7 +137,7 @@ Ready for 3D export!
           <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
             <Sparkles className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-xl font-bold text-gray-800">Saree Design Studio</h1>
+          <h1 className="text-xl font-bold text-gray-800">WeaveSmart</h1>
         </div>
 
         <div className="flex items-center space-x-3">
@@ -188,41 +188,59 @@ Ready for 3D export!
       <div className="flex-1 flex overflow-hidden relative">
         {/* Left Panel - Design Library */}
         <div
-          className={`bg-white border-r border-gray-200 overflow-y-auto transition-all duration-300 ${isSidebarCollapsed ? 'w-0' : 'w-96'
+          className={`design-library-sidebar bg-white border-r border-gray-200 transition-all duration-300 absolute md:relative inset-y-0 left-0 z-40 shadow-2xl md:shadow-none ${isSidebarCollapsed ? 'hidden' : 'w-60 md:w-96'
             }`}
         >
-          {!isSidebarCollapsed && (
-            <DesignLibrary
-              bodyColor={bodyColor}
-              setBodyColor={setBodyColor}
-              borderColor={borderColor}
-              setBorderColor={setBorderColor}
-              palluColor={palluColor}
-              setPalluColor={setPalluColor}
-              sareeType={sareeType}
-              setSareeType={setSareeType}
-              selectedMotifs={selectedMotifs}
-              setSelectedMotifs={setSelectedMotifs}
-            />
-          )}
-        </div>
-
-        {/* Sidebar Toggle Button */}
-        <button
-          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          className={`absolute top-4 ${isSidebarCollapsed ? 'left-4' : 'left-[22rem]'} z-30 bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg shadow-lg transition-all duration-300`}
-          title={isSidebarCollapsed ? 'Show Design Library' : 'Hide Design Library'}
-        >
-          {isSidebarCollapsed ? (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          ) : (
+          {/* Sidebar Toggle Button - Outside scrollable area */}
+          <button
+            onClick={() => setIsSidebarCollapsed(true)}
+            className="absolute top-4 right-4 z-50 bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg shadow-lg transition-all duration-300"
+            title="Hide Design Library"
+          >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-          )}
-        </button>
+          </button>
+
+          {/* Scrollable content */}
+          <div className="overflow-y-auto overflow-x-hidden h-full">
+            {!isSidebarCollapsed && (
+              <DesignLibrary
+                bodyColor={bodyColor}
+                setBodyColor={setBodyColor}
+                borderColor={borderColor}
+                setBorderColor={setBorderColor}
+                palluColor={palluColor}
+                setPalluColor={setPalluColor}
+                sareeType={sareeType}
+                setSareeType={setSareeType}
+                selectedMotifs={selectedMotifs}
+                setSelectedMotifs={setSelectedMotifs}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Backdrop for mobile - click to close sidebar */}
+        {!isSidebarCollapsed && (
+          <div
+            className="absolute inset-0 bg-black bg-opacity-50 z-30 md:hidden"
+            onClick={() => setIsSidebarCollapsed(true)}
+          ></div>
+        )}
+
+        {/* Open Sidebar Button - Only when collapsed */}
+        {isSidebarCollapsed && (
+          <button
+            onClick={() => setIsSidebarCollapsed(false)}
+            className="absolute top-4 left-4 z-30 bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg shadow-lg transition-all duration-300"
+            title="Show Design Library"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        )}
 
         {/* Right Panel - Saree Canvas */}
         <SareeCanvas

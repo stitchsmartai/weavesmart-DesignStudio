@@ -25,8 +25,8 @@ function DesignLibrary({
   };
 
   return (
-    <div className="w-96 bg-white border-r border-gray-200 overflow-y-auto">
-      <div className="p-6 space-y-6">
+    <div className="w-72 md:w-96 bg-white border-r border-gray-200 overflow-y-auto overflow-x-hidden">
+      <div className="p-4 md:p-6 space-y-6 max-w-full">
         <h2 className="text-lg font-bold text-gray-800">Design Library</h2>
 
         <Templates onTemplateSelect={handleTemplateSelect} />

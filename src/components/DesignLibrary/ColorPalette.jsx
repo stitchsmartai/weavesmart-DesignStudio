@@ -28,8 +28,8 @@ function ColorPalette({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Border Color
             </label>
-            <div className="flex items-center space-x-3">
-              <div className="relative">
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className="relative flex-shrink-0">
                 <input
                   type="color"
                   value={borderColor}
@@ -42,7 +42,7 @@ function ColorPalette({
                 type="text"
                 value={borderColor}
                 onChange={(e) => setBorderColor(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
                 placeholder="#F59E0B"
               />
             </div>
@@ -53,8 +53,8 @@ function ColorPalette({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Body Color
             </label>
-            <div className="flex items-center space-x-3">
-              <div className="relative">
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className="relative flex-shrink-0">
                 <input
                   type="color"
                   value={bodyColor}
@@ -67,7 +67,7 @@ function ColorPalette({
                 type="text"
                 value={bodyColor}
                 onChange={(e) => setBodyColor(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
                 placeholder="#DC2626"
               />
             </div>
@@ -78,8 +78,8 @@ function ColorPalette({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Pallu Color
             </label>
-            <div className="flex items-center space-x-3">
-              <div className="relative">
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className="relative flex-shrink-0">
                 <input
                   type="color"
                   value={palluColor}
@@ -92,7 +92,7 @@ function ColorPalette({
                 type="text"
                 value={palluColor}
                 onChange={(e) => setPalluColor(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
                 placeholder="#EC4899"
               />
             </div>
