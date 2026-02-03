@@ -12,6 +12,7 @@ function MotifCanvas({ bodyColor, patternSettings }) {
   const [motifCount, setMotifCount] = useState(0);
   const [gridMotifs, setGridMotifs] = useState([]); // Track motifs added via grid
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // Separate confirmation for delete
   const [showInstructions, setShowInstructions] = useState(() => {
     const saved = localStorage.getItem('hideMotifInstructions');
     return saved !== 'true';
@@ -40,14 +41,20 @@ function MotifCanvas({ bodyColor, patternSettings }) {
 
     // Handle object selection
     canvas.on('selection:created', (e) => {
-      setSelectedMotif(e.selected[0]);
+      // For multi-select, e.selected contains all objects, but we want the ActiveSelection itself
+      const selection = canvas.getActiveObject();
+      console.log('Selection created:', selection?.type, 'Objects:', selection?._objects?.length || 1);
+      setSelectedMotif(selection);
     });
 
     canvas.on('selection:updated', (e) => {
-      setSelectedMotif(e.selected[0]);
+      const selection = canvas.getActiveObject();
+      console.log('Selection updated:', selection?.type, 'Objects:', selection?._objects?.length || 1);
+      setSelectedMotif(selection);
     });
 
     canvas.on('selection:cleared', () => {
+      console.log('Selection cleared');
       setSelectedMotif(null);
     });
 
@@ -58,58 +65,14 @@ function MotifCanvas({ bodyColor, patternSettings }) {
 
     canvas.on('object:moving', (e) => {
       const obj = e.target;
-
-      // Get bounding box
-      const bound = obj.getBoundingRect(true, true);
-
-      // Canvas dimensions
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-
-      // Keep object within canvas boundaries with some padding
-      const padding = 10;
-
-      // Left boundary
-      if (bound.left < padding) {
-        obj.left = Math.max(obj.left, obj.left - bound.left + padding);
-      }
-
-      // Top boundary
-      if (bound.top < padding) {
-        obj.top = Math.max(obj.top, obj.top - bound.top + padding);
-      }
-
-      // Right boundary
-      if (bound.left + bound.width > canvasWidth - padding) {
-        obj.left = Math.min(obj.left, canvasWidth - bound.width + obj.left - bound.left - padding);
-      }
-
-      // Bottom boundary
-      if (bound.top + bound.height > canvasHeight - padding) {
-        obj.top = Math.min(obj.top, canvasHeight - bound.height + obj.top - bound.top - padding);
-      }
-
+      // Update coordinates for proper boundary detection
       obj.setCoords();
     });
 
-    // Also constrain during scaling/resizing
+    // Update coordinates during scaling/resizing
     canvas.on('object:scaling', (e) => {
       const obj = e.target;
-      const bound = obj.getBoundingRect(true, true);
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-      const padding = 10;
-
-      // If object is getting too big or going out of bounds, constrain it
-      if (bound.left < padding || bound.top < padding ||
-        bound.left + bound.width > canvasWidth - padding ||
-        bound.top + bound.height > canvasHeight - padding) {
-
-        // Revert to previous scale if it goes out of bounds
-        obj.scaleX = obj.scaleX * 0.99;
-        obj.scaleY = obj.scaleY * 0.99;
-        obj.setCoords();
-      }
+      obj.setCoords();
     });
 
     return () => {
@@ -298,32 +261,62 @@ function MotifCanvas({ bodyColor, patternSettings }) {
 
   const deleteSelectedMotif = () => {
     if (!fabricCanvasRef.current || !selectedMotif) return;
+    // Show confirmation modal first
+    setShowDeleteConfirm(true);
+  };
 
-    // Check if it's a multi-selection
-    const isMultiSelect = selectedMotif.type === 'activeSelection';
+  const confirmDeleteSelected = () => {
+    if (!fabricCanvasRef.current || !selectedMotif) {
+      console.error('Cannot delete: canvas or selectedMotif is null');
+      return;
+    }
 
-    if (isMultiSelect) {
-      // Delete all objects in the selection
-      const objectsToDelete = selectedMotif.getObjects();
-      objectsToDelete.forEach(obj => {
-        fabricCanvasRef.current.remove(obj);
+    const canvas = fabricCanvasRef.current;
+
+    console.log('=== DELETE CONFIRMED ===');
+    console.log('Selected motif type:', selectedMotif.type);
+    console.log('Selected motif:', selectedMotif);
+
+    // Check if it's a multi-selection (NOTE: Fabric.js uses lowercase 'activeselection')
+    if (selectedMotif.type === 'activeselection') {
+      // For ActiveSelection, access the _objects property directly
+      const objectsToDelete = selectedMotif._objects ? [...selectedMotif._objects] : [];
+
+      console.log('Objects to delete:', objectsToDelete.length);
+      console.log('Objects array:', objectsToDelete);
+
+      if (objectsToDelete.length === 0) {
+        console.error('No objects found in ActiveSelection!');
+        setShowDeleteConfirm(false);
+        return;
+      }
+
+      // Discard selection first
+      canvas.discardActiveObject();
+
+      // Now remove each object
+      objectsToDelete.forEach((obj, index) => {
+        console.log(`Removing object ${index + 1}/${objectsToDelete.length}:`, obj.motifName);
+        canvas.remove(obj);
         // Remove from gridMotifs if it's a grid motif
         if (obj.isGridMotif) {
           setGridMotifs(prev => prev.filter(m => m !== obj));
         }
       });
     } else {
-      // Delete single object
-      fabricCanvasRef.current.remove(selectedMotif);
-      // Remove from gridMotifs if it's a grid motif
+      // Single object delete
+      console.log('Single delete:', selectedMotif.motifName);
+      canvas.remove(selectedMotif);
       if (selectedMotif.isGridMotif) {
         setGridMotifs(prev => prev.filter(m => m !== selectedMotif));
       }
     }
 
-    fabricCanvasRef.current.renderAll();
+    canvas.renderAll();
     setSelectedMotif(null);
-    setMotifCount(fabricCanvasRef.current.getObjects().length);
+    setMotifCount(canvas.getObjects().length);
+    setShowDeleteConfirm(false);
+    console.log('=== DELETE COMPLETE ===');
   };
 
   const clearAllMotifs = () => {
@@ -349,6 +342,8 @@ function MotifCanvas({ bodyColor, patternSettings }) {
 
     const canvas = fabricCanvasRef.current;
 
+    console.log('Selecting all grid motifs. Count:', gridMotifs.length);
+
     // Discard any current selection first
     canvas.discardActiveObject();
 
@@ -365,6 +360,13 @@ function MotifCanvas({ bodyColor, patternSettings }) {
     });
 
     canvas.setActiveObject(selection);
+
+    console.log('ActiveSelection created:', selection.type, 'with', selection._objects?.length, 'objects');
+    console.log('Selection._objects:', selection._objects);
+
+    // CRITICAL: Update the selectedMotif state so delete/color operations work!
+    setSelectedMotif(selection);
+
     canvas.requestRenderAll();
   };
 
@@ -383,13 +385,33 @@ function MotifCanvas({ bodyColor, patternSettings }) {
   };
 
   const changeMotifColor = (color) => {
-    if (!selectedMotif) return;
+    if (!selectedMotif) {
+      console.error('No motif selected for color change');
+      return;
+    }
 
-    // Check if it's a multi-selection
-    const isMultiSelect = selectedMotif.type === 'activeSelection';
-    const motifsToColor = isMultiSelect ? selectedMotif.getObjects() : [selectedMotif];
+    console.log('=== CHANGE COLOR ===');
+    console.log('Selected motif type:', selectedMotif.type);
+    console.log('Color:', color);
 
-    motifsToColor.forEach(motif => {
+    const motifsToColor = [];
+
+    // Check if it's a multi-selection (NOTE: Fabric.js uses lowercase 'activeselection')
+    if (selectedMotif.type === 'activeselection') {
+      // Access the _objects property directly for ActiveSelection
+      const objects = selectedMotif._objects || [];
+      console.log('Changing color for', objects.length, 'motifs');
+      console.log('Objects:', objects);
+      motifsToColor.push(...objects);
+    } else {
+      console.log('Single motif color change');
+      motifsToColor.push(selectedMotif);
+    }
+
+    console.log('Total motifs to color:', motifsToColor.length);
+
+    motifsToColor.forEach((motif, index) => {
+      console.log(`Coloring motif ${index + 1}:`, motif.motifName);
       // Apply color filter to image
       motif.set('fill', color);
 
@@ -405,6 +427,7 @@ function MotifCanvas({ bodyColor, patternSettings }) {
     });
 
     fabricCanvasRef.current.renderAll();
+    console.log('=== COLOR CHANGE COMPLETE ===');
   };
 
   return (
@@ -486,7 +509,7 @@ function MotifCanvas({ bodyColor, patternSettings }) {
         <div className="motif-controls absolute bottom-2 right-2 bg-white border border-gray-300 rounded-lg shadow-lg px-2 py-1.5 md:px-3 md:py-2 flex items-center space-x-2 md:space-x-3 z-10 scale-75 md:scale-100 origin-bottom-right transition-opacity duration-200">
           <span className="text-xs text-gray-600">
             <span className="font-semibold text-gray-800">
-              {selectedMotif.type === 'activeSelection'
+              {selectedMotif.type === 'activeselection'
                 ? `${selectedMotif.size()} motifs selected`
                 : selectedMotif.motifName}
             </span>
@@ -498,14 +521,14 @@ function MotifCanvas({ bodyColor, patternSettings }) {
               defaultValue="#000000"
               onChange={(e) => changeMotifColor(e.target.value)}
               className="w-6 h-6 rounded cursor-pointer border border-gray-300"
-              title={selectedMotif.type === 'activeSelection' ? 'Change color of all' : 'Change color'}
+              title={selectedMotif.type === 'activeselection' ? 'Change color of all' : 'Change color'}
             />
           </div>
 
           <button
             onClick={deleteSelectedMotif}
             className="flex items-center space-x-1 px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded transition text-xs"
-            title={selectedMotif.type === 'activeSelection' ? 'Delete all selected' : 'Delete motif'}
+            title={selectedMotif.type === 'activeselection' ? 'Delete all selected' : 'Delete motif'}
           >
             <Trash2 className="w-3 h-3" />
           </button>
@@ -543,6 +566,34 @@ function MotifCanvas({ bodyColor, patternSettings }) {
                 className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition font-medium"
               >
                 Clear All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Selected Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-2xl p-6 max-w-sm mx-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Delete Selected Motif{selectedMotif?.type === 'activeselection' ? 's' : ''}?</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              {selectedMotif?.type === 'activeselection'
+                ? `This will delete ${selectedMotif.size()} selected motifs. This action cannot be undone.`
+                : 'This will delete the selected motif. This action cannot be undone.'}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteSelected}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition font-medium"
+              >
+                Delete
               </button>
             </div>
           </div>
