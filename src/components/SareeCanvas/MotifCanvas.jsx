@@ -8,6 +8,7 @@ function MotifCanvas({ bodyColor, patternSettings }) {
   const canvasRef = useRef(null);
   const fabricCanvasRef = useRef(null);
   const containerRef = useRef(null);
+  const colorChangeTimeoutRef = useRef(null); // For debouncing color changes
   const [selectedMotif, setSelectedMotif] = useState(null);
   const [motifCount, setMotifCount] = useState(0);
   const [gridMotifs, setGridMotifs] = useState([]); // Track motifs added via grid
@@ -43,18 +44,15 @@ function MotifCanvas({ bodyColor, patternSettings }) {
     canvas.on('selection:created', (e) => {
       // For multi-select, e.selected contains all objects, but we want the ActiveSelection itself
       const selection = canvas.getActiveObject();
-      console.log('Selection created:', selection?.type, 'Objects:', selection?._objects?.length || 1);
       setSelectedMotif(selection);
     });
 
     canvas.on('selection:updated', (e) => {
       const selection = canvas.getActiveObject();
-      console.log('Selection updated:', selection?.type, 'Objects:', selection?._objects?.length || 1);
       setSelectedMotif(selection);
     });
 
     canvas.on('selection:cleared', () => {
-      console.log('Selection cleared');
       setSelectedMotif(null);
     });
 
@@ -266,27 +264,16 @@ function MotifCanvas({ bodyColor, patternSettings }) {
   };
 
   const confirmDeleteSelected = () => {
-    if (!fabricCanvasRef.current || !selectedMotif) {
-      console.error('Cannot delete: canvas or selectedMotif is null');
-      return;
-    }
+    if (!fabricCanvasRef.current || !selectedMotif) return;
 
     const canvas = fabricCanvasRef.current;
-
-    console.log('=== DELETE CONFIRMED ===');
-    console.log('Selected motif type:', selectedMotif.type);
-    console.log('Selected motif:', selectedMotif);
 
     // Check if it's a multi-selection (NOTE: Fabric.js uses lowercase 'activeselection')
     if (selectedMotif.type === 'activeselection') {
       // For ActiveSelection, access the _objects property directly
       const objectsToDelete = selectedMotif._objects ? [...selectedMotif._objects] : [];
 
-      console.log('Objects to delete:', objectsToDelete.length);
-      console.log('Objects array:', objectsToDelete);
-
       if (objectsToDelete.length === 0) {
-        console.error('No objects found in ActiveSelection!');
         setShowDeleteConfirm(false);
         return;
       }
@@ -295,8 +282,7 @@ function MotifCanvas({ bodyColor, patternSettings }) {
       canvas.discardActiveObject();
 
       // Now remove each object
-      objectsToDelete.forEach((obj, index) => {
-        console.log(`Removing object ${index + 1}/${objectsToDelete.length}:`, obj.motifName);
+      objectsToDelete.forEach((obj) => {
         canvas.remove(obj);
         // Remove from gridMotifs if it's a grid motif
         if (obj.isGridMotif) {
@@ -305,7 +291,6 @@ function MotifCanvas({ bodyColor, patternSettings }) {
       });
     } else {
       // Single object delete
-      console.log('Single delete:', selectedMotif.motifName);
       canvas.remove(selectedMotif);
       if (selectedMotif.isGridMotif) {
         setGridMotifs(prev => prev.filter(m => m !== selectedMotif));
@@ -316,7 +301,6 @@ function MotifCanvas({ bodyColor, patternSettings }) {
     setSelectedMotif(null);
     setMotifCount(canvas.getObjects().length);
     setShowDeleteConfirm(false);
-    console.log('=== DELETE COMPLETE ===');
   };
 
   const clearAllMotifs = () => {
@@ -342,8 +326,6 @@ function MotifCanvas({ bodyColor, patternSettings }) {
 
     const canvas = fabricCanvasRef.current;
 
-    console.log('Selecting all grid motifs. Count:', gridMotifs.length);
-
     // Discard any current selection first
     canvas.discardActiveObject();
 
@@ -360,9 +342,6 @@ function MotifCanvas({ bodyColor, patternSettings }) {
     });
 
     canvas.setActiveObject(selection);
-
-    console.log('ActiveSelection created:', selection.type, 'with', selection._objects?.length, 'objects');
-    console.log('Selection._objects:', selection._objects);
 
     // CRITICAL: Update the selectedMotif state so delete/color operations work!
     setSelectedMotif(selection);
@@ -385,14 +364,7 @@ function MotifCanvas({ bodyColor, patternSettings }) {
   };
 
   const changeMotifColor = (color) => {
-    if (!selectedMotif) {
-      console.error('No motif selected for color change');
-      return;
-    }
-
-    console.log('=== CHANGE COLOR ===');
-    console.log('Selected motif type:', selectedMotif.type);
-    console.log('Color:', color);
+    if (!selectedMotif) return;
 
     const motifsToColor = [];
 
@@ -400,18 +372,12 @@ function MotifCanvas({ bodyColor, patternSettings }) {
     if (selectedMotif.type === 'activeselection') {
       // Access the _objects property directly for ActiveSelection
       const objects = selectedMotif._objects || [];
-      console.log('Changing color for', objects.length, 'motifs');
-      console.log('Objects:', objects);
       motifsToColor.push(...objects);
     } else {
-      console.log('Single motif color change');
       motifsToColor.push(selectedMotif);
     }
 
-    console.log('Total motifs to color:', motifsToColor.length);
-
-    motifsToColor.forEach((motif, index) => {
-      console.log(`Coloring motif ${index + 1}:`, motif.motifName);
+    motifsToColor.forEach((motif) => {
       // Apply color filter to image
       motif.set('fill', color);
 
@@ -427,7 +393,19 @@ function MotifCanvas({ bodyColor, patternSettings }) {
     });
 
     fabricCanvasRef.current.renderAll();
-    console.log('=== COLOR CHANGE COMPLETE ===');
+  };
+
+  // Debounced version to prevent lag during color picker sliding
+  const handleColorChange = (color) => {
+    // Clear any existing timeout
+    if (colorChangeTimeoutRef.current) {
+      clearTimeout(colorChangeTimeoutRef.current);
+    }
+
+    // Set new timeout - apply color after user stops sliding for 100ms
+    colorChangeTimeoutRef.current = setTimeout(() => {
+      changeMotifColor(color);
+    }, 100);
   };
 
   return (
@@ -519,7 +497,7 @@ function MotifCanvas({ bodyColor, patternSettings }) {
             <input
               type="color"
               defaultValue="#000000"
-              onChange={(e) => changeMotifColor(e.target.value)}
+              onChange={(e) => handleColorChange(e.target.value)}
               className="w-6 h-6 rounded cursor-pointer border border-gray-300"
               title={selectedMotif.type === 'activeselection' ? 'Change color of all' : 'Change color'}
             />
