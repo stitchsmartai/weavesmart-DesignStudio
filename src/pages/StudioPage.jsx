@@ -17,6 +17,23 @@ function StudioPage() {
   const [notification, setNotification] = useState(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
+  // Pattern settings for body and pallu
+  const [bodyPatternSettings, setBodyPatternSettings] = useState({
+    mode: 'free', // 'free' or 'grid'
+    rows: 5,
+    cols: 8,
+    spacing: 10,
+    pattern: 'all', // 'all', 'checkerboard', 'diagonal', etc.
+  });
+
+  const [palluPatternSettings, setPalluPatternSettings] = useState({
+    mode: 'free',
+    rows: 5,
+    cols: 2,
+    spacing: 10,
+    pattern: 'all',
+  });
+
   // Auto-save to localStorage
   useEffect(() => {
     const designState = {
@@ -216,6 +233,10 @@ Ready for 3D export!
                 setSareeType={setSareeType}
                 selectedMotifs={selectedMotifs}
                 setSelectedMotifs={setSelectedMotifs}
+                bodyPatternSettings={bodyPatternSettings}
+                setBodyPatternSettings={setBodyPatternSettings}
+                palluPatternSettings={palluPatternSettings}
+                setPalluPatternSettings={setPalluPatternSettings}
               />
             )}
           </div>
@@ -249,6 +270,8 @@ Ready for 3D export!
           palluColor={palluColor}
           selectedSection={selectedSection}
           setSelectedSection={setSelectedSection}
+          bodyPatternSettings={bodyPatternSettings}
+          palluPatternSettings={palluPatternSettings}
         />
       </div>
     </div>

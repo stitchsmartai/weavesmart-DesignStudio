@@ -101,3 +101,6 @@ Desktop.ini
 
 # Misc
 .turbo
+
+# Project context (internal documentation)
+CONTEXT.md

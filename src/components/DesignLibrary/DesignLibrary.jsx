@@ -5,6 +5,7 @@ import MotifLibrary from './MotifLibrary';
 import PalluSelector from './PalluSelector';
 import BorderSelector from './BorderSelector';
 import ColorPalette from './ColorPalette';
+import PatternMode from './PatternMode';
 
 function DesignLibrary({
   bodyColor,
@@ -17,6 +18,10 @@ function DesignLibrary({
   setSareeType,
   selectedMotifs,
   setSelectedMotifs,
+  bodyPatternSettings,
+  setBodyPatternSettings,
+  palluPatternSettings,
+  setPalluPatternSettings,
 }) {
   const handleTemplateSelect = (colors) => {
     setBodyColor(colors.bodyColor);
@@ -31,6 +36,17 @@ function DesignLibrary({
 
         <Templates onTemplateSelect={handleTemplateSelect} />
         <SareeType sareeType={sareeType} setSareeType={setSareeType} />
+
+
+        {/* Grid Settings for Both Canvases */}
+        <PatternMode
+          bodyPatternSettings={bodyPatternSettings}
+          setBodyPatternSettings={setBodyPatternSettings}
+          palluPatternSettings={palluPatternSettings}
+          setPalluPatternSettings={setPalluPatternSettings}
+        />
+
+
         <MotifLibrary
           selectedMotifs={selectedMotifs}
           setSelectedMotifs={setSelectedMotifs}

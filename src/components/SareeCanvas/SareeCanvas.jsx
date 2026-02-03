@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { ZoomIn, ZoomOut, Lock, Unlock, RotateCw } from 'lucide-react';
 import MotifCanvas from './MotifCanvas';
 
-function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setSelectedSection }) {
+function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setSelectedSection, bodyPatternSettings, palluPatternSettings }) {
   const [zoom, setZoom] = useState(100);
   const [lastTap, setLastTap] = useState(0);
   const containerRef = useRef(null);
@@ -264,7 +264,7 @@ function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setS
                 <div className="absolute inset-0 pointer-events-none border-r border-black/5"></div>
 
                 <div className="h-full w-full">
-                  <MotifCanvas bodyColor={bodyColor} />
+                  <MotifCanvas bodyColor={bodyColor} patternSettings={bodyPatternSettings} />
                 </div>
 
                 {selectedSection === 'body' && (
@@ -284,7 +284,7 @@ function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setS
                 <div className="absolute inset-0 pointer-events-none border-l border-black/5"></div>
 
                 <div className="h-full w-full">
-                  <MotifCanvas bodyColor={palluColor} />
+                  <MotifCanvas bodyColor={palluColor} patternSettings={palluPatternSettings} />
                 </div>
 
                 {selectedSection === 'pallu' && (

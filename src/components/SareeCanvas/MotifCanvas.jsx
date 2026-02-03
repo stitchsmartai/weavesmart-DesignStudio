@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { Canvas, FabricImage, filters } from 'fabric';
+import * as fabric from 'fabric';
 import { Trash2, RotateCcw } from 'lucide-react';
+import { calculateGridPositions } from '../../utils/gridPatternUtils';
 
-function MotifCanvas({ bodyColor }) {
+function MotifCanvas({ bodyColor, patternSettings }) {
   const canvasRef = useRef(null);
   const fabricCanvasRef = useRef(null);
   const containerRef = useRef(null);
   const [selectedMotif, setSelectedMotif] = useState(null);
   const [motifCount, setMotifCount] = useState(0);
+  const [gridMotifs, setGridMotifs] = useState([]); // Track motifs added via grid
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showInstructions, setShowInstructions] = useState(() => {
     const saved = localStorage.getItem('hideMotifInstructions');
     return saved !== 'true';
@@ -54,20 +58,57 @@ function MotifCanvas({ bodyColor }) {
 
     canvas.on('object:moving', (e) => {
       const obj = e.target;
-      const bound = obj.getBoundingRect();
 
-      // Keep object within canvas boundaries
-      if (bound.left < 0) {
-        obj.left = Math.max(obj.left, obj.left - bound.left);
+      // Get bounding box
+      const bound = obj.getBoundingRect(true, true);
+
+      // Canvas dimensions
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+
+      // Keep object within canvas boundaries with some padding
+      const padding = 10;
+
+      // Left boundary
+      if (bound.left < padding) {
+        obj.left = Math.max(obj.left, obj.left - bound.left + padding);
       }
-      if (bound.top < 0) {
-        obj.top = Math.max(obj.top, obj.top - bound.top);
+
+      // Top boundary
+      if (bound.top < padding) {
+        obj.top = Math.max(obj.top, obj.top - bound.top + padding);
       }
-      if (bound.left + bound.width > canvas.width) {
-        obj.left = Math.min(obj.left, canvas.width - bound.width + obj.left - bound.left);
+
+      // Right boundary
+      if (bound.left + bound.width > canvasWidth - padding) {
+        obj.left = Math.min(obj.left, canvasWidth - bound.width + obj.left - bound.left - padding);
       }
-      if (bound.top + bound.height > canvas.height) {
-        obj.top = Math.min(obj.top, canvas.height - bound.height + obj.top - bound.top);
+
+      // Bottom boundary
+      if (bound.top + bound.height > canvasHeight - padding) {
+        obj.top = Math.min(obj.top, canvasHeight - bound.height + obj.top - bound.top - padding);
+      }
+
+      obj.setCoords();
+    });
+
+    // Also constrain during scaling/resizing
+    canvas.on('object:scaling', (e) => {
+      const obj = e.target;
+      const bound = obj.getBoundingRect(true, true);
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const padding = 10;
+
+      // If object is getting too big or going out of bounds, constrain it
+      if (bound.left < padding || bound.top < padding ||
+        bound.left + bound.width > canvasWidth - padding ||
+        bound.top + bound.height > canvasHeight - padding) {
+
+        // Revert to previous scale if it goes out of bounds
+        obj.scaleX = obj.scaleX * 0.99;
+        obj.scaleY = obj.scaleY * 0.99;
+        obj.setCoords();
       }
     });
 
@@ -121,39 +162,165 @@ function MotifCanvas({ bodyColor }) {
     }
   }, [bodyColor]);
 
+  // Live update grid when pattern settings change
+  useEffect(() => {
+    if (!fabricCanvasRef.current || !patternSettings || patternSettings.mode !== 'grid' || gridMotifs.length === 0) return;
+
+    const canvas = fabricCanvasRef.current;
+    const positions = calculateGridPositions(
+      canvas.width,
+      canvas.height,
+      patternSettings.rows,
+      patternSettings.cols,
+      patternSettings.spacing,
+      patternSettings.pattern
+    );
+
+    // Filter motifs that should exist based on new pattern
+    const motifsToKeep = [];
+    const motifsToRemove = [];
+
+    gridMotifs.forEach((motif, index) => {
+      if (index < positions.length) {
+        // Update position
+        const pos = positions[index];
+        motif.set({
+          left: pos.x,
+          top: pos.y,
+        });
+        motif.gridPosition = { row: pos.row, col: pos.col };
+        motifsToKeep.push(motif);
+      } else {
+        // Remove excess motifs
+        motifsToRemove.push(motif);
+      }
+    });
+
+    // Remove excess motifs from canvas
+    motifsToRemove.forEach(motif => {
+      canvas.remove(motif);
+    });
+
+    // Update grid motifs state
+    setGridMotifs(motifsToKeep);
+    setMotifCount(canvas.getObjects().length);
+    canvas.renderAll();
+  }, [patternSettings?.rows, patternSettings?.cols, patternSettings?.spacing, patternSettings?.pattern]);
+
   const addMotifToCanvas = (motif, x, y) => {
     if (!fabricCanvasRef.current) return;
 
-    FabricImage.fromURL(motif.thumbnail)
-      .then((img) => {
-        // Scale to reasonable size
-        const scale = 0.3;
-        img.set({
-          left: x,
-          top: y,
-          scaleX: scale,
-          scaleY: scale,
-        });
+    // Check if we're in grid mode
+    const isGridMode = patternSettings && patternSettings.mode === 'grid';
 
-        // Add custom properties
-        img.motifId = motif.id;
-        img.motifName = motif.name;
+    if (isGridMode) {
+      // Grid mode: fill entire pattern
+      const canvas = fabricCanvasRef.current;
+      const positions = calculateGridPositions(
+        canvas.width,
+        canvas.height,
+        patternSettings.rows,
+        patternSettings.cols,
+        patternSettings.spacing,
+        patternSettings.pattern
+      );
 
-        fabricCanvasRef.current.add(img);
-        fabricCanvasRef.current.setActiveObject(img);
-        fabricCanvasRef.current.renderAll();
+      // Add motif at each grid position
+      const addedMotifs = [];
+      const TARGET_SIZE = 50; // Fixed size in pixels
 
-        setMotifCount(fabricCanvasRef.current.getObjects().length);
-      })
-      .catch((error) => {
-        console.error('Error loading motif:', error);
+      positions.forEach((pos, index) => {
+        FabricImage.fromURL(motif.svg || motif.thumbnail)
+          .then((img) => {
+            // Calculate scale to achieve target pixel size
+            const scale = TARGET_SIZE / Math.max(img.width, img.height);
+
+            img.set({
+              left: pos.x,
+              top: pos.y,
+              scaleX: scale,
+              scaleY: scale,
+              originX: 'center',
+              originY: 'center',
+            });
+
+            img.motifId = motif.id;
+            img.motifName = motif.name;
+            img.gridPosition = { row: pos.row, col: pos.col };
+            img.isGridMotif = true; // Mark as grid motif
+
+            canvas.add(img);
+            addedMotifs.push(img);
+
+            // Only set active on last one
+            if (index === positions.length - 1) {
+              canvas.setActiveObject(img);
+              setGridMotifs(prev => [...prev, ...addedMotifs]);
+            }
+
+            canvas.renderAll();
+            setMotifCount(canvas.getObjects().length);
+          })
+          .catch((error) => {
+            console.error('Error loading motif:', error);
+          });
       });
+    } else {
+      // Free mode: single placement
+      const TARGET_SIZE = 80; // Slightly larger for free placement
+
+      FabricImage.fromURL(motif.svg || motif.thumbnail)
+        .then((img) => {
+          // Calculate scale to achieve target pixel size
+          const scale = TARGET_SIZE / Math.max(img.width, img.height);
+
+          img.set({
+            left: x,
+            top: y,
+            scaleX: scale,
+            scaleY: scale,
+          });
+
+          img.motifId = motif.id;
+          img.motifName = motif.name;
+
+          fabricCanvasRef.current.add(img);
+          fabricCanvasRef.current.setActiveObject(img);
+          fabricCanvasRef.current.renderAll();
+
+          setMotifCount(fabricCanvasRef.current.getObjects().length);
+        })
+        .catch((error) => {
+          console.error('Error loading motif:', error);
+        });
+    }
   };
 
   const deleteSelectedMotif = () => {
     if (!fabricCanvasRef.current || !selectedMotif) return;
 
-    fabricCanvasRef.current.remove(selectedMotif);
+    // Check if it's a multi-selection
+    const isMultiSelect = selectedMotif.type === 'activeSelection';
+
+    if (isMultiSelect) {
+      // Delete all objects in the selection
+      const objectsToDelete = selectedMotif.getObjects();
+      objectsToDelete.forEach(obj => {
+        fabricCanvasRef.current.remove(obj);
+        // Remove from gridMotifs if it's a grid motif
+        if (obj.isGridMotif) {
+          setGridMotifs(prev => prev.filter(m => m !== obj));
+        }
+      });
+    } else {
+      // Delete single object
+      fabricCanvasRef.current.remove(selectedMotif);
+      // Remove from gridMotifs if it's a grid motif
+      if (selectedMotif.isGridMotif) {
+        setGridMotifs(prev => prev.filter(m => m !== selectedMotif));
+      }
+    }
+
     fabricCanvasRef.current.renderAll();
     setSelectedMotif(null);
     setMotifCount(fabricCanvasRef.current.getObjects().length);
@@ -161,31 +328,81 @@ function MotifCanvas({ bodyColor }) {
 
   const clearAllMotifs = () => {
     if (!fabricCanvasRef.current) return;
+    setShowClearConfirm(true);
+  };
 
-    if (confirm('Remove all motifs?')) {
+  const confirmClearAll = () => {
+    if (fabricCanvasRef.current) {
       fabricCanvasRef.current.clear();
       fabricCanvasRef.current.backgroundColor = bodyColor;
       fabricCanvasRef.current.renderAll();
       setMotifCount(0);
       setSelectedMotif(null);
     }
+    setShowClearConfirm(false);
+    setGridMotifs([]); // Clear grid tracking too
+  };
+
+  // Select all grid motifs
+  const selectAllGridMotifs = () => {
+    if (!fabricCanvasRef.current || gridMotifs.length === 0) return;
+
+    const canvas = fabricCanvasRef.current;
+
+    // Discard any current selection first
+    canvas.discardActiveObject();
+
+    // Create new selection with proper settings
+    const selection = new fabric.ActiveSelection(gridMotifs, {
+      canvas: canvas,
+      lockScalingFlip: true,
+      hasControls: true,
+      hasBorders: true,
+      cornerStyle: 'circle',
+      cornerSize: 10,
+      borderColor: '#3B82F6',
+      cornerColor: '#3B82F6',
+    });
+
+    canvas.setActiveObject(selection);
+    canvas.requestRenderAll();
+  };
+
+  // Delete all grid motifs
+  const deleteAllGridMotifs = () => {
+    if (!fabricCanvasRef.current || gridMotifs.length === 0) return;
+
+    gridMotifs.forEach(motif => {
+      fabricCanvasRef.current.remove(motif);
+    });
+
+    fabricCanvasRef.current.renderAll();
+    setGridMotifs([]);
+    setMotifCount(fabricCanvasRef.current.getObjects().length);
+    setSelectedMotif(null);
   };
 
   const changeMotifColor = (color) => {
     if (!selectedMotif) return;
 
-    // Apply color filter to image
-    selectedMotif.set('fill', color);
+    // Check if it's a multi-selection
+    const isMultiSelect = selectedMotif.type === 'activeSelection';
+    const motifsToColor = isMultiSelect ? selectedMotif.getObjects() : [selectedMotif];
 
-    // Create a color overlay effect
-    selectedMotif.filters = [
-      new filters.BlendColor({
-        color: color,
-        mode: 'tint',
-        alpha: 0.5
-      })
-    ];
-    selectedMotif.applyFilters();
+    motifsToColor.forEach(motif => {
+      // Apply color filter to image
+      motif.set('fill', color);
+
+      // Create a color overlay effect
+      motif.filters = [
+        new filters.BlendColor({
+          color: color,
+          mode: 'tint',
+          alpha: 0.5
+        })
+      ];
+      motif.applyFilters();
+    });
 
     fabricCanvasRef.current.renderAll();
   };
@@ -201,8 +418,34 @@ function MotifCanvas({ bodyColor }) {
 
       {/* Motif Count Badge */}
       {motifCount > 0 && (
-        <div className="absolute top-2 left-2 bg-purple-600 text-white text-xs px-3 py-1 rounded-full shadow-lg z-10">
+        <div className="absolute top-2 left-2 bg-purple-600 text-white text-xs px-3 py-1 rounded-full shadow-lg z-10 pointer-events-none">
           {motifCount} motif{motifCount !== 1 ? 's' : ''}
+        </div>
+      )}
+
+      {/* Grid Mode Indicator */}
+      {patternSettings && patternSettings.mode === 'grid' && (
+        <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-3 py-1 rounded-full shadow-lg z-10 flex items-center space-x-1 pointer-events-none">
+          <span>⚡</span>
+          <span>Grid: {patternSettings.rows}×{patternSettings.cols}</span>
+        </div>
+      )}
+
+      {/* Grid Controls (when grid motifs exist) */}
+      {gridMotifs.length > 0 && (
+        <div className="absolute bottom-2 left-2 bg-white border border-gray-300 rounded-lg shadow-lg p-2 z-10 flex gap-2">
+          <button
+            onClick={selectAllGridMotifs}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition font-medium"
+          >
+            Select All ({gridMotifs.length})
+          </button>
+          <button
+            onClick={deleteAllGridMotifs}
+            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition font-medium"
+          >
+            Clear Grid
+          </button>
         </div>
       )}
 
@@ -242,7 +485,11 @@ function MotifCanvas({ bodyColor }) {
       {selectedMotif && (
         <div className="motif-controls absolute bottom-2 right-2 bg-white border border-gray-300 rounded-lg shadow-lg px-2 py-1.5 md:px-3 md:py-2 flex items-center space-x-2 md:space-x-3 z-10 scale-75 md:scale-100 origin-bottom-right transition-opacity duration-200">
           <span className="text-xs text-gray-600">
-            <span className="font-semibold text-gray-800">{selectedMotif.motifName}</span>
+            <span className="font-semibold text-gray-800">
+              {selectedMotif.type === 'activeSelection'
+                ? `${selectedMotif.size()} motifs selected`
+                : selectedMotif.motifName}
+            </span>
           </span>
 
           <div className="flex items-center space-x-2">
@@ -251,14 +498,14 @@ function MotifCanvas({ bodyColor }) {
               defaultValue="#000000"
               onChange={(e) => changeMotifColor(e.target.value)}
               className="w-6 h-6 rounded cursor-pointer border border-gray-300"
-              title="Change color"
+              title={selectedMotif.type === 'activeSelection' ? 'Change color of all' : 'Change color'}
             />
           </div>
 
           <button
             onClick={deleteSelectedMotif}
             className="flex items-center space-x-1 px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded transition text-xs"
-            title="Delete motif"
+            title={selectedMotif.type === 'activeSelection' ? 'Delete all selected' : 'Delete motif'}
           >
             <Trash2 className="w-3 h-3" />
           </button>
@@ -275,6 +522,30 @@ function MotifCanvas({ bodyColor }) {
             <RotateCcw className="w-4 h-4" />
             <span>Clear All</span>
           </button>
+        </div>
+      )}
+
+      {/* Clear All Confirmation Modal */}
+      {showClearConfirm && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-2xl p-6 max-w-sm mx-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Clear All Motifs?</h3>
+            <p className="text-sm text-gray-600 mb-4">This will remove all motifs from the canvas. This action cannot be undone.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmClearAll}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition font-medium"
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
