@@ -92,7 +92,7 @@ function MotifCanvas({ bodyColor, patternSettings }) {
     return () => {
       canvas.removeEventListener('motifTouchDrop', handleTouchDrop);
     };
-  }, []);
+  }, [patternSettings]); // Add patternSettings so grid mode works on mobile
 
   // Handle drag and drop
   const handleDragOver = (e) => {
@@ -188,7 +188,7 @@ function MotifCanvas({ bodyColor, patternSettings }) {
 
       // Add motif at each grid position
       const addedMotifs = [];
-      const TARGET_SIZE = 50; // Fixed size in pixels
+      const TARGET_SIZE = 20; // Small absolute size in pixels for grid
 
       positions.forEach((pos, index) => {
         FabricImage.fromURL(motif.svg || motif.thumbnail)
@@ -228,7 +228,7 @@ function MotifCanvas({ bodyColor, patternSettings }) {
       });
     } else {
       // Free mode: single placement
-      const TARGET_SIZE = 80; // Slightly larger for free placement
+      const TARGET_SIZE = 20; // Small absolute size in pixels for free placement
 
       FabricImage.fromURL(motif.svg || motif.thumbnail)
         .then((img) => {
@@ -417,33 +417,36 @@ function MotifCanvas({ bodyColor, patternSettings }) {
     >
       <canvas ref={canvasRef} className="w-full h-full block" />
 
-      {/* Motif Count Badge */}
-      {motifCount > 0 && (
-        <div className="absolute top-2 left-2 bg-purple-600 text-white text-xs px-3 py-1 rounded-full shadow-lg z-10 pointer-events-none">
-          {motifCount} motif{motifCount !== 1 ? 's' : ''}
-        </div>
-      )}
+      {/* Status Badges - Centered at top to avoid blocking corners */}
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 pointer-events-none">
+        {/* Motif Count Badge */}
+        {motifCount > 0 && (
+          <div className="bg-purple-600/90 backdrop-blur-sm text-white text-[10px] px-2 py-0.5 rounded-full shadow-md">
+            {motifCount} motif{motifCount !== 1 ? 's' : ''}
+          </div>
+        )}
 
-      {/* Grid Mode Indicator */}
-      {patternSettings && patternSettings.mode === 'grid' && (
-        <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-3 py-1 rounded-full shadow-lg z-10 flex items-center space-x-1 pointer-events-none">
-          <span>⚡</span>
-          <span>Grid: {patternSettings.rows}×{patternSettings.cols}</span>
-        </div>
-      )}
+        {/* Grid Mode Indicator */}
+        {patternSettings && patternSettings.mode === 'grid' && (
+          <div className="bg-blue-600/90 backdrop-blur-sm text-white text-[10px] px-2 py-0.5 rounded-full shadow-md flex items-center gap-1">
+            <span>⚡</span>
+            <span>Grid: {patternSettings.rows}×{patternSettings.cols}</span>
+          </div>
+        )}
+      </div>
 
-      {/* Grid Controls (when grid motifs exist) */}
+      {/* Grid Controls - Centered at bottom to avoid blocking corners */}
       {gridMotifs.length > 0 && (
-        <div className="absolute bottom-2 left-2 bg-white border border-gray-300 rounded-lg shadow-lg p-2 z-10 flex gap-2">
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-sm border border-gray-300 rounded-lg shadow-lg p-1.5 z-10 flex gap-2">
           <button
             onClick={selectAllGridMotifs}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition font-medium"
+            className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10px] rounded transition font-medium"
           >
             Select All ({gridMotifs.length})
           </button>
           <button
             onClick={deleteAllGridMotifs}
-            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition font-medium"
+            className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white text-[10px] rounded transition font-medium"
           >
             Clear Grid
           </button>
@@ -482,30 +485,28 @@ function MotifCanvas({ bodyColor, patternSettings }) {
         </div>
       )}
 
-      {/* Motif Controls Bar (only when selected) */}
+      {/* Motif Controls Bar (only when selected) - Compact and semi-transparent */}
       {selectedMotif && (
-        <div className="motif-controls absolute bottom-2 right-2 bg-white border border-gray-300 rounded-lg shadow-lg px-2 py-1.5 md:px-3 md:py-2 flex items-center space-x-2 md:space-x-3 z-10 scale-75 md:scale-100 origin-bottom-right transition-opacity duration-200">
-          <span className="text-xs text-gray-600">
+        <div className="motif-controls absolute bottom-2 right-2 bg-white/95 backdrop-blur-sm border border-gray-300 rounded-lg shadow-lg px-2 py-1 flex items-center gap-2 z-10 transition-opacity duration-200">
+          <span className="text-[10px] text-gray-600">
             <span className="font-semibold text-gray-800">
               {selectedMotif.type === 'activeselection'
-                ? `${selectedMotif.size()} motifs selected`
+                ? `${selectedMotif.size()} selected`
                 : selectedMotif.motifName}
             </span>
           </span>
 
-          <div className="flex items-center space-x-2">
-            <input
-              type="color"
-              defaultValue="#000000"
-              onChange={(e) => handleColorChange(e.target.value)}
-              className="w-6 h-6 rounded cursor-pointer border border-gray-300"
-              title={selectedMotif.type === 'activeselection' ? 'Change color of all' : 'Change color'}
-            />
-          </div>
+          <input
+            type="color"
+            defaultValue="#000000"
+            onChange={(e) => handleColorChange(e.target.value)}
+            className="w-5 h-5 rounded cursor-pointer border border-gray-300"
+            title={selectedMotif.type === 'activeselection' ? 'Change color of all' : 'Change color'}
+          />
 
           <button
             onClick={deleteSelectedMotif}
-            className="flex items-center space-x-1 px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded transition text-xs"
+            className="flex items-center px-1.5 py-0.5 bg-red-100 hover:bg-red-200 text-red-700 rounded transition"
             title={selectedMotif.type === 'activeselection' ? 'Delete all selected' : 'Delete motif'}
           >
             <Trash2 className="w-3 h-3" />

@@ -145,13 +145,19 @@ function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setS
   return (
     <div
       ref={containerRef}
-      className={`flex-1 bg-gray-50 flex items-center justify-center overflow-auto relative ${rotation === 90 ? 'py-16' : 'py-4'}`}
+      className={`flex-1 bg-gray-50 flex items-center justify-center overflow-auto relative ${rotation === 90 ? 'py-8 md:py-12' : 'py-4'}`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Zoom Controls - Horizontal on mobile portrait, vertical on desktop */}
-      <div className="zoom-controls-mobile fixed bottom-4 left-4 right-4 md:bottom-auto md:top-24 md:right-8 md:left-auto z-30 bg-white rounded-lg shadow-lg border border-gray-200 p-1.5 md:p-2 flex flex-row md:flex-col items-center justify-between md:justify-start gap-1 md:gap-0 md:space-y-2">
+      {/* Zoom Controls - Adapts based on canvas orientation */}
+      <div className={`
+        zoom-controls z-30 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 
+        ${rotation === 90
+          ? 'fixed top-24 right-4 p-2 flex flex-col space-y-2' // Portrait: top-right, vertical (increased from top-20)
+          : 'fixed bottom-6 left-4 right-4 md:left-auto md:right-4 md:bottom-6 md:w-auto p-1.5 md:p-2 flex flex-row md:flex-col items-center justify-between md:justify-start gap-1 md:gap-0 md:space-y-2' // Landscape: bottom with more spacing
+        }
+      `}>
         <button
           onClick={handleZoomIn}
           className={`p-1.5 md:p-2 hover:bg-gray-100 rounded transition flex-shrink-0 ${isZoomLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -183,8 +189,8 @@ function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setS
           Reset
         </button>
 
-        {/* Divider - hidden on mobile */}
-        <div className="hidden md:block border-t border-gray-200 my-1"></div>
+        {/* Divider */}
+        <div className={`border-gray-200 ${rotation === 90 ? 'border-t my-1' : 'hidden md:block md:border-t md:my-1'}`}></div>
 
         {/* Zoom Lock Button */}
         <button
@@ -206,7 +212,7 @@ function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setS
         </button>
       </div>
 
-      <div className="saree-canvas-container w-full px-4 md:px-4 max-w-5xl landscape:max-w-4xl">
+      <div className={`saree-canvas-container w-full px-4 md:px-4 max-w-5xl landscape:max-w-4xl ${rotation === 90 ? 'py-8 md:py-12' : ''}`}>
 
         <div
           ref={canvasWrapperRef}
@@ -268,7 +274,7 @@ function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setS
                 </div>
 
                 {selectedSection === 'body' && (
-                  <div className="absolute top-2 right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded shadow-lg z-20 pointer-events-none">
+                  <div className="absolute top-2 left-2 bg-purple-600/80 backdrop-blur-sm text-white text-[10px] px-2 py-0.5 rounded shadow-md z-20 pointer-events-none">
                     Body
                   </div>
                 )}
@@ -288,7 +294,7 @@ function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setS
                 </div>
 
                 {selectedSection === 'pallu' && (
-                  <div className="absolute top-2 right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded shadow-lg z-20 pointer-events-none">
+                  <div className="absolute top-2 right-2 bg-purple-600/80 backdrop-blur-sm text-white text-[10px] px-2 py-0.5 rounded shadow-md z-20 pointer-events-none">
                     Pallu
                   </div>
                 )}

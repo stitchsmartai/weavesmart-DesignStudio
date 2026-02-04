@@ -147,8 +147,8 @@ function PatternMode({ bodyPatternSettings, setBodyPatternSettings, palluPattern
                                 </div>
                             </div>
 
-                            {/* Compact Pattern Preview */}
-                            <div className="bg-gray-50 p-2 rounded">
+                            {/* Compact Pattern Preview - Hidden on mobile */}
+                            <div className="hidden md:block bg-gray-50 p-2 rounded">
                                 <div
                                     className="grid gap-0.5 mx-auto"
                                     style={{
