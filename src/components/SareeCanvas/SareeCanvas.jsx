@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ZoomIn, ZoomOut, Lock, Unlock, RotateCw } from 'lucide-react';
 import MotifCanvas from './MotifCanvas';
+import MiniMap from './MiniMap';
 
 function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setSelectedSection, bodyPatternSettings, palluPatternSettings }) {
   const [zoom, setZoom] = useState(100);
@@ -15,6 +16,14 @@ function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setS
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [isMiniMapExpanded, setIsMiniMapExpanded] = useState(false);
+
+  // Auto-collapse mini-map when zoom resets to 100%
+  useEffect(() => {
+    if (zoom === 100) {
+      setIsMiniMapExpanded(false);
+    }
+  }, [zoom]);
 
   // Handle zoom in/out with buttons
   const handleZoomIn = () => {
@@ -319,6 +328,20 @@ function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setS
           </div>
         </div>
       </div>
+
+      {/* Mini-Map Navigation - Only show when zoomed in */}
+      {zoom > 100 && (
+        <MiniMap
+          zoom={zoom}
+          panOffset={panOffset}
+          rotation={rotation}
+          expanded={isMiniMapExpanded}
+          setExpanded={setIsMiniMapExpanded}
+          onNavigate={(newPanOffset) => {
+            setPanOffset(newPanOffset);
+          }}
+        />
+      )}
     </div>
   );
 }
