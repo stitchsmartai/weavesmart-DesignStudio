@@ -5,21 +5,20 @@
  * Example: flower-bouquet.svg → category="flower", name="bouquet"
  * 
  * This function:
- * 1. Scans all SVG files in /public/motifs
+ * 1. Auto-discovers all SVG files in /public/motifs using Vite's import.meta.glob
  * 2. Parses filenames to extract category and name
  * 3. Auto-generates motif objects with proper formatting
  * 4. Groups motifs by category
+ * 
+ * ✨ NEW: No need to manually update array - just drop SVG files in /public/motifs!
  */
 
-// List of all motif files (update this when adding new motifs)
-// In production, this could be auto-generated at build time
-const MOTIF_FILES = [
-    'flower-bouquet.svg',
-    'leaf-branch.svg',
-    'paisley.svg',
-    'peacock-detailed.svg',
-    'peacock-simple.svg',
-];
+// Auto-discover all SVG files in /public/motifs folder
+// Vite's import.meta.glob scans the folder at build time
+const motifModules = import.meta.glob('/public/motifs/*.svg', {
+    eager: true,
+    as: 'url'
+});
 
 /**
  * Converts kebab-case to Title Case
@@ -76,7 +75,14 @@ function generateMotif(filename) {
  * Loads all motifs and groups them by category
  */
 export function loadMotifs() {
-    const motifs = MOTIF_FILES.map(generateMotif);
+    // Extract filenames from the auto-discovered paths
+    const motifPaths = Object.keys(motifModules);
+
+    const motifs = motifPaths.map(path => {
+        // Extract filename from path: '/public/motifs/flower-bouquet.svg' → 'flower-bouquet.svg'
+        const filename = path.split('/').pop();
+        return generateMotif(filename);
+    });
 
     // Group by category
     const categories = {};
