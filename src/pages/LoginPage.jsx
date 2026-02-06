@@ -9,8 +9,8 @@ function LoginPage() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    // For now, just navigate to studio (no actual authentication)
-    navigate('/studio');
+    // For now, just navigate to home page (no actual authentication)
+    navigate('/home');
   };
 
   return (
