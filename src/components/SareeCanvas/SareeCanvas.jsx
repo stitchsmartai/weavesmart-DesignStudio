@@ -3,7 +3,7 @@ import { ZoomIn, ZoomOut, Lock, Unlock, RotateCw } from 'lucide-react';
 import MotifCanvas from './MotifCanvas';
 import MiniMap from './MiniMap';
 
-function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setSelectedSection, bodyPatternSettings, palluPatternSettings }) {
+function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setSelectedSection, bodyPatternSettings, palluPatternSettings, tasselSettings }) {
   const [zoom, setZoom] = useState(100);
   const [lastTap, setLastTap] = useState(0);
   const containerRef = useRef(null);
@@ -154,7 +154,10 @@ function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setS
   return (
     <div
       ref={containerRef}
-      className={`flex-1 bg-gray-50 flex items-center justify-center overflow-auto relative ${rotation === 90 ? 'py-8 md:py-12' : 'py-4'}`}
+      className={`flex-1 bg-gray-50 flex items-center justify-center overflow-auto relative ${rotation === 90
+          ? 'py-8 md:py-12 px-4' // Portrait: padding top/bottom and sides
+          : 'py-6 px-4' // Landscape: padding all around
+        }`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -163,8 +166,8 @@ function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setS
       <div className={`
         zoom-controls z-30 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 
         ${rotation === 90
-          ? 'fixed top-24 right-4 p-2 flex flex-col space-y-2' // Portrait: top-right, vertical (increased from top-20)
-          : 'fixed bottom-6 left-4 right-4 md:left-auto md:right-4 md:bottom-6 md:w-auto p-1.5 md:p-2 flex flex-row md:flex-col items-center justify-between md:justify-start gap-1 md:gap-0 md:space-y-2' // Landscape: bottom with more spacing
+          ? 'fixed top-24 right-4 p-2 flex flex-col space-y-2' // Portrait: top-right, vertical
+          : 'fixed bottom-6 left-1/2 -translate-x-1/2 p-1.5 md:p-2 flex flex-row items-center gap-2 md:gap-1' // Landscape: bottom-center horizontal to avoid tassels
         }
       `}>
         <button
@@ -221,11 +224,14 @@ function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setS
         </button>
       </div>
 
-      <div className={`saree-canvas-container w-full px-4 md:px-4 max-w-5xl landscape:max-w-4xl ${rotation === 90 ? 'py-8 md:py-12' : ''}`}>
+      <div className={`saree-canvas-container w-full max-w-5xl landscape:max-w-4xl ${rotation === 90
+          ? 'max-h-[calc(100vh-12rem)]' // Portrait: limit height to fit viewport
+          : '' // Landscape: no height limit
+        }`}>
 
         <div
           ref={canvasWrapperRef}
-          className={`bg-white rounded-xl shadow-2xl overflow-hidden ${zoom > 100 ? 'cursor-grab active:cursor-grabbing' : ''}`}
+          className={`bg-white rounded-xl shadow-2xl overflow-visible ${zoom > 100 ? 'cursor-grab active:cursor-grabbing' : ''}`}
           onClick={handleDoubleTap}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -299,7 +305,7 @@ function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setS
                 <div className="absolute inset-0 pointer-events-none border-l border-black/5"></div>
 
                 <div className="h-full w-full">
-                  <MotifCanvas bodyColor={palluColor} patternSettings={palluPatternSettings} />
+                  <MotifCanvas bodyColor={palluColor} patternSettings={palluPatternSettings} tasselSettings={tasselSettings} />
                 </div>
 
                 {selectedSection === 'pallu' && (

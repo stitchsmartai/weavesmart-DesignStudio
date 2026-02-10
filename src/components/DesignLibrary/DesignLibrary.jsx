@@ -6,6 +6,7 @@ import PalluSelector from './PalluSelector';
 import BorderSelector from './BorderSelector';
 import ColorPalette from './ColorPalette';
 import PatternMode from './PatternMode';
+import Tassels from './Tassels';
 
 function DesignLibrary({
   bodyColor,
@@ -22,6 +23,8 @@ function DesignLibrary({
   setBodyPatternSettings,
   palluPatternSettings,
   setPalluPatternSettings,
+  tasselSettings,
+  setTasselSettings,
 }) {
   const handleTemplateSelect = (colors) => {
     setBodyColor(colors.bodyColor);
@@ -61,6 +64,10 @@ function DesignLibrary({
           setBorderColor={setBorderColor}
           palluColor={palluColor}
           setPalluColor={setPalluColor}
+        />
+        <Tassels
+          tasselSettings={tasselSettings}
+          setTasselSettings={setTasselSettings}
         />
       </div>
     </div>

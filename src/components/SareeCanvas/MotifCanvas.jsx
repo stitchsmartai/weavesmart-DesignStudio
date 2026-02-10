@@ -4,11 +4,13 @@ import * as fabric from 'fabric';
 import { Trash2, RotateCcw } from 'lucide-react';
 import { calculateGridPositions } from '../../utils/gridPatternUtils';
 
-function MotifCanvas({ bodyColor, patternSettings }) {
+function MotifCanvas({ bodyColor, patternSettings, tasselSettings }) {
   const canvasRef = useRef(null);
   const fabricCanvasRef = useRef(null);
   const containerRef = useRef(null);
   const colorChangeTimeoutRef = useRef(null); // For debouncing color changes
+  const tasselObjectsRef = useRef([]); // Track tassel Fabric objects
+  const tasselSvgRef = useRef(null); // Track tassel SVG element for debugging
   const [selectedMotif, setSelectedMotif] = useState(null);
   const [motifCount, setMotifCount] = useState(0);
   const [gridMotifs, setGridMotifs] = useState([]); // Track motifs added via grid
@@ -33,13 +35,13 @@ function MotifCanvas({ bodyColor, patternSettings }) {
       backgroundColor: bodyColor,
       selection: true,
       preserveObjectStacking: true,
+      renderOnAddRemove: false,
     });
 
     fabricCanvasRef.current = canvas;
 
-    // Ensure canvas resizes with CCS (responsive)
+    // Ensure canvas resizes with CSS (responsive)
     canvas.setDimensions({ width: '100%', height: '100%' }, { cssOnly: true });
-
     // Handle object selection
     canvas.on('selection:created', (e) => {
       // For multi-select, e.selected contains all objects, but we want the ActiveSelection itself
@@ -93,6 +95,147 @@ function MotifCanvas({ bodyColor, patternSettings }) {
       canvas.removeEventListener('motifTouchDrop', handleTouchDrop);
     };
   }, [patternSettings]); // Add patternSettings so grid mode works on mobile
+
+  // Render tassels on pallu canvas (right edge)
+  useEffect(() => {
+    // DISABLED: Tassels are now rendered as SVG overlay, not in Fabric.js
+    return;
+
+    const canvas = fabricCanvasRef.current;
+    if (!canvas || !tasselSettings) return;
+
+    console.log('Tassel useEffect triggered', {
+      enabled: tasselSettings.enabled,
+      style: tasselSettings.style,
+      color: tasselSettings.color,
+      length: tasselSettings.length,
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height
+    });
+
+    // Remove existing tassels
+    tasselObjectsRef.current.forEach(obj => canvas.remove(obj));
+    tasselObjectsRef.current = [];
+
+    // Only render if tassels are enabled
+    if (!tasselSettings.enabled) {
+      canvas.renderAll();
+      return;
+    }
+
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const palluEdgeX = canvas.originalWidth || canvasWidth; // Original pallu width (without extension)
+
+    // Tassel configuration
+    const tasselCount = 12; // Reduced for better spacing
+    const tasselSpacing = canvasHeight / (tasselCount + 1);
+    const tasselLength = tasselSettings.length || 60;
+    const tasselColor = tasselSettings.color || '#F59E0B';
+    const tasselStyle = tasselSettings.style || 'simple';
+
+    console.log('Creating tassels:', {
+      tasselCount,
+      tasselSpacing,
+      tasselLength,
+      tasselColor,
+      tasselStyle,
+      palluEdgeX,
+      canvasWidth
+    });
+
+    // Create HORIZONTAL tassels extending BEYOND the pallu edge
+    // Tassels start at pallu edge and extend outward into the extra canvas space
+    for (let i = 1; i <= tasselCount; i++) {
+      const yPosition = tasselSpacing * i; // Position along the height
+      const xStart = palluEdgeX; // Start at pallu right edge
+      const xEnd = palluEdgeX + tasselLength; // Extend outward
+
+      let tasselObject;
+
+      if (tasselStyle === 'simple') {
+        // Simple fringe: horizontal line extending to the right
+        tasselObject = new fabric.Line(
+          [xStart, yPosition, xEnd, yPosition],
+          {
+            stroke: tasselColor,
+            strokeWidth: 2,
+            selectable: false,
+            evented: false,
+            objectCaching: false,
+          }
+        );
+      } else if (tasselStyle === 'beaded') {
+        // Beaded: horizontal line with circles
+        const elements = [];
+
+        // Main horizontal line
+        const line = new fabric.Line(
+          [xStart, yPosition, xEnd, yPosition],
+          {
+            stroke: tasselColor,
+            strokeWidth: 2,
+            objectCaching: false,
+          }
+        );
+        elements.push(line);
+
+        // Add beads along the line
+        const beadCount = 3;
+        for (let b = 1; b <= beadCount; b++) {
+          const beadX = xStart + (tasselLength / (beadCount + 1)) * b;
+          const bead = new fabric.Circle({
+            left: beadX,
+            top: yPosition,
+            radius: 3,
+            fill: tasselColor,
+            originX: 'center',
+            originY: 'center',
+            objectCaching: false,
+          });
+          elements.push(bead);
+        }
+
+        tasselObject = new fabric.Group(elements, {
+          selectable: false,
+          evented: false,
+          objectCaching: false,
+        });
+      } else if (tasselStyle === 'twisted') {
+        // Twisted: wavy horizontal line
+        const points = [];
+        const segments = 10;
+        const amplitude = 3; // Vertical wave amplitude
+
+        for (let s = 0; s <= segments; s++) {
+          const segX = xStart + (tasselLength / segments) * s;
+          const segY = yPosition + Math.sin((s / segments) * Math.PI * 4) * amplitude;
+          points.push({ x: segX, y: segY });
+        }
+
+        tasselObject = new fabric.Polyline(points, {
+          stroke: tasselColor,
+          strokeWidth: 2,
+          fill: '',
+          selectable: false,
+          evented: false,
+          objectCaching: false,
+        });
+      }
+
+      if (tasselObject) {
+        canvas.add(tasselObject);
+        tasselObjectsRef.current.push(tasselObject);
+      }
+    }
+
+    console.log('Total tassels added:', tasselObjectsRef.current.length);
+
+    // Send tassels to back so they don't cover motifs
+    tasselObjectsRef.current.forEach(obj => canvas.sendObjectToBack(obj));
+    canvas.renderAll();
+
+  }, [tasselSettings]); // Re-render when tassel settings change
 
   // Handle drag and drop
   const handleDragOver = (e) => {
@@ -411,11 +554,135 @@ function MotifCanvas({ bodyColor, patternSettings }) {
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full bg-gray-50 overflow-hidden"
+      className="relative w-full h-full bg-gray-50 overflow-visible"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
       <canvas ref={canvasRef} className="w-full h-full block" />
+
+      {/* Tassel Overlay - Absolutely positioned to extend beyond canvas */}
+      {tasselSettings?.enabled && containerRef.current && (() => {
+        const tasselCount = 12;
+        const containerHeight = containerRef.current?.clientHeight || 0;
+        const spacing = containerHeight / (tasselCount + 1);
+        const tassels = [];
+
+        // Debug logging
+        console.log('🎀 Tassel Rendering Debug:', {
+          enabled: tasselSettings.enabled,
+          style: tasselSettings.style,
+          color: tasselSettings.color,
+          length: tasselSettings.length,
+          tasselCount,
+          containerHeight,
+          spacing: spacing.toFixed(2),
+          svgWidth: tasselSettings.length,
+        });
+
+        // Check actual rendered size after render
+        setTimeout(() => {
+          if (tasselSvgRef.current) {
+            const rect = tasselSvgRef.current.getBoundingClientRect();
+            console.log('📏 SVG Actual Rendered Size:', {
+              width: rect.width,
+              height: rect.height,
+              expectedWidth: tasselSettings.length,
+              expectedHeight: containerHeight,
+              scaledDown: rect.width < tasselSettings.length,
+            });
+          }
+        }, 100);
+
+        for (let i = 1; i <= tasselCount; i++) {
+          const y = spacing * i;
+          const key = `tassel-${i}`;
+
+          if (i === 1) {
+            console.log(`  First tassel at y=${y.toFixed(2)}, x=0 to x=${tasselSettings.length}`);
+          }
+
+          if (tasselSettings.style === 'simple') {
+            tassels.push(
+              <line
+                key={key}
+                x1="0"
+                y1={y}
+                x2={tasselSettings.length}
+                y2={y}
+                stroke={tasselSettings.color}
+                strokeWidth="4"
+                strokeLinecap="round"
+              />
+            );
+          } else if (tasselSettings.style === 'beaded') {
+            const beadCount = 3;
+            const elements = [
+              <line
+                key={`${key}-line`}
+                x1="0"
+                y1={y}
+                x2={tasselSettings.length}
+                y2={y}
+                stroke={tasselSettings.color}
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+            ];
+            for (let b = 1; b <= beadCount; b++) {
+              const beadX = (tasselSettings.length / (beadCount + 1)) * b;
+              elements.push(
+                <circle
+                  key={`${key}-bead-${b}`}
+                  cx={beadX}
+                  cy={y}
+                  r="5"
+                  fill={tasselSettings.color}
+                />
+              );
+            }
+            tassels.push(<g key={key}>{elements}</g>);
+          } else if (tasselSettings.style === 'twisted') {
+            const segments = 10;
+            const amplitude = 5;
+            let pathD = `M 0 ${y}`;
+            for (let s = 1; s <= segments; s++) {
+              const x = (tasselSettings.length / segments) * s;
+              const waveY = y + Math.sin((s / segments) * Math.PI * 4) * amplitude;
+              pathD += ` L ${x} ${waveY}`;
+            }
+            tassels.push(
+              <path
+                key={key}
+                d={pathD}
+                stroke={tasselSettings.color}
+                strokeWidth="4"
+                strokeLinecap="round"
+                fill="none"
+              />
+            );
+          }
+        }
+
+        console.log(`  Total tassels rendered: ${tassels.length}`);
+
+        return (
+          <svg
+            ref={tasselSvgRef}
+            className="absolute top-0 pointer-events-none"
+            width={tasselSettings.length}
+            height={containerHeight}
+            style={{
+              position: 'absolute',
+              left: '100%',
+              top: 0,
+              width: `${tasselSettings.length}px`,
+              height: `${containerHeight}px`,
+            }}
+          >
+            {tassels}
+          </svg>
+        );
+      })()}
 
       {/* Status Badges - Centered at top to avoid blocking corners */}
       <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 pointer-events-none">
