@@ -34,6 +34,14 @@ function StudioPage() {
     pattern: 'all',
   });
 
+  // Tassel settings
+  const [tasselSettings, setTasselSettings] = useState({
+    enabled: false,
+    color: '#F59E0B', // Default to border color
+    style: 'simple', // 'simple', 'beaded', 'twisted'
+    length: 60, // 30 (short), 60 (medium), 90 (long)
+  });
+
   // Auto-save to localStorage
   useEffect(() => {
     const designState = {
@@ -240,6 +248,8 @@ Ready for 3D export!
                 setBodyPatternSettings={setBodyPatternSettings}
                 palluPatternSettings={palluPatternSettings}
                 setPalluPatternSettings={setPalluPatternSettings}
+                tasselSettings={tasselSettings}
+                setTasselSettings={setTasselSettings}
               />
             )}
           </div>
@@ -275,6 +285,7 @@ Ready for 3D export!
           setSelectedSection={setSelectedSection}
           bodyPatternSettings={bodyPatternSettings}
           palluPatternSettings={palluPatternSettings}
+          tasselSettings={tasselSettings}
         />
       </div>
     </div>
