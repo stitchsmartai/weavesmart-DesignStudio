@@ -1,5 +1,7 @@
 import { X, Maximize2, Minimize2 } from 'lucide-react';
 
+const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+
 function MiniMap({ zoom, panOffset, rotation, onNavigate, expanded, setExpanded }) {
   // Mini-map dimensions
   const MINI_WIDTH_COLLAPSED = 160;
@@ -14,21 +16,23 @@ function MiniMap({ zoom, panOffset, rotation, onNavigate, expanded, setExpanded 
   const SAREE_ASPECT = 5 / 2.2;
 
   // Calculate viewport rectangle dimensions and position
-  // Viewport size is inversely proportional to zoom
-  const viewportWidth = Math.min(miniWidth / (zoom / 100), miniWidth * 0.9);
-  const viewportHeight = Math.min(miniHeight / (zoom / 100), miniHeight * 0.9);
+  const zoomScale = zoom / 100;
 
-  // Calculate viewport position based on pan offset
-  // When panning right (positive panOffset.x), the content moves right, viewport moves left
-  const scale = miniWidth / 1000; // Assume base canvas width of ~1000px
-  const viewportX = Math.max(0, Math.min(
-    miniWidth - viewportWidth,
-    (miniWidth - viewportWidth) / 2 - (panOffset.x * scale)
-  ));
-  const viewportY = Math.max(0, Math.min(
-    miniHeight - viewportHeight,
-    (miniHeight - viewportHeight) / 2 - (panOffset.y * scale)
-  ));
+  // Viewport shrinks when zoom increases
+  const viewportWidth = miniWidth / zoomScale;
+  const viewportHeight = miniHeight / zoomScale;
+
+  // Convert canvas panOffset → minimap position, clamped to mini-map bounds
+  const viewportX = clamp(
+    miniWidth / 2 - viewportWidth / 2 - panOffset.x / zoomScale,
+    0,
+    miniWidth - viewportWidth
+  );
+  const viewportY = clamp(
+    miniHeight / 2 - viewportHeight / 2 - panOffset.y / zoomScale,
+    0,
+    miniHeight - viewportHeight
+  );
 
   // Handle click/touch on mini-map to navigate (supports both desktop and mobile)
   const handleClick = (e) => {
@@ -43,14 +47,9 @@ function MiniMap({ zoom, panOffset, rotation, onNavigate, expanded, setExpanded 
 
     const zoomScale = zoom / 100;
 
-    // Center of the mini-map viewport
-    const viewportCenterX = rect.width / 2;
-    const viewportCenterY = rect.height / 2;
-
-    // SNAP calculation (absolute positioning, not relative)
-    // This instantly centers the clicked point on the main canvas
-    const newPanX = -(clickX - viewportCenterX) * zoomScale;
-    const newPanY = -(clickY - viewportCenterY) * zoomScale;
+    // SNAP calculation: center clicked point in main canvas
+    const newPanX = (miniWidth / 2 - clickX) * zoomScale;
+    const newPanY = (miniHeight / 2 - clickY) * zoomScale;
 
     onNavigate({
       x: newPanX,
@@ -65,7 +64,7 @@ function MiniMap({ zoom, panOffset, rotation, onNavigate, expanded, setExpanded 
 
   return (
     <div
-      className={`absolute bottom-4 right-4 bg-white shadow-2xl border-2 border-gray-200 rounded-lg z-40 transition-all duration-300 overflow-hidden ${
+      className={`fixed bottom-4 md:bottom-24 right-4 md:right-6 bg-white shadow-2xl border-2 border-gray-200 rounded-lg z-[70] transition-all duration-300 overflow-hidden ${
         expanded ? 'w-80 h-[140px]' : 'w-40 h-[70px]'
       }`}
     >
