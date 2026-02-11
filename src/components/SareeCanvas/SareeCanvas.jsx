@@ -231,8 +231,8 @@ function SareeCanvas({
       <div className={`
         zoom-controls z-30 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 
         ${rotation === 90
-          ? 'fixed top-24 right-4 p-2 flex flex-col space-y-2' // Portrait: top-right, vertical (increased from top-20)
-          : 'fixed bottom-6 left-4 right-4 md:left-auto md:right-4 md:bottom-6 md:w-auto p-1.5 md:p-2 flex flex-row md:flex-col items-center justify-between md:justify-start gap-1 md:gap-0 md:space-y-2' // Landscape: bottom with more spacing
+          ? 'fixed top-24 right-4 p-2 flex flex-col space-y-2' // Portrait: top-right, vertical
+          : 'fixed bottom-6 left-1/2 -translate-x-1/2 p-1.5 md:p-2 flex flex-row items-center gap-2 md:gap-1' // Landscape: bottom-center horizontal to avoid tassels
         }
       `}>
         <button

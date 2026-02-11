@@ -183,21 +183,21 @@ function MotifCanvas({
       canvas.dispose();
       fabricCanvasRef.current = null;
     };
-  }, [bodyColor, exposeActions, onSelectionChange, onMotifCountChange]);
+  }, []); // init once; bodyColor changes handled below
 
   // Listen for mobile touch drop events
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const canvasElement = canvasRef.current;
+    if (!canvasElement) return;
 
     const handleTouchDrop = (e) => {
       const { motif, x, y } = e.detail;
       addMotifToCanvas(motif, x, y);
     };
 
-    canvas.addEventListener('motifTouchDrop', handleTouchDrop);
+    canvasElement.addEventListener('motifTouchDrop', handleTouchDrop);
     return () => {
-      canvas.removeEventListener('motifTouchDrop', handleTouchDrop);
+      canvasElement.removeEventListener('motifTouchDrop', handleTouchDrop);
     };
   }, []);
 
