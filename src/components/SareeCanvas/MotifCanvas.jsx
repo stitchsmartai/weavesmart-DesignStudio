@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Canvas, FabricImage, filters } from 'fabric';
 import * as fabric from 'fabric';
 import { Trash2, RotateCcw } from 'lucide-react';
 import { calculateGridPositions } from '../../utils/gridPatternUtils';
 
-function MotifCanvas({ bodyColor, patternSettings, tasselSettings }) {
+const MotifCanvas = forwardRef(({ bodyColor, patternSettings, tasselSettings }, ref) => {
   const canvasRef = useRef(null);
   const fabricCanvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -79,6 +79,19 @@ function MotifCanvas({ bodyColor, patternSettings, tasselSettings }) {
       canvas.dispose();
     };
   }, []);
+
+  // Expose canvas methods via ref
+  useImperativeHandle(ref, () => ({
+    getObjects: () => fabricCanvasRef.current?.getObjects() || [],
+    removeObject: (obj) => {
+      if (fabricCanvasRef.current) {
+        fabricCanvasRef.current.remove(obj);
+        fabricCanvasRef.current.renderAll();
+      }
+    },
+    renderAll: () => fabricCanvasRef.current?.renderAll(),
+    getCanvas: () => fabricCanvasRef.current
+  }));
 
   // Listen for mobile touch drop events
   useEffect(() => {
@@ -847,6 +860,6 @@ function MotifCanvas({ bodyColor, patternSettings, tasselSettings }) {
       )}
     </div>
   );
-}
+});
 
 export default MotifCanvas;

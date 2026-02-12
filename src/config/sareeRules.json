@@ -1,0 +1,74 @@
+{
+    "sareeTypes": {
+        "nivi": {
+            "displayName": "Nivi",
+            "allowedMotifs": [
+                "all"
+            ],
+            "gridLimits": {
+                "body": {
+                    "maxRows": 20,
+                    "maxCols": 25
+                },
+                "pallu": {
+                    "maxRows": 15,
+                    "maxCols": 15
+                }
+            },
+            "minMotifSpacing": 30
+        },
+        "bengali": {
+            "displayName": "Bengali",
+            "allowedMotifs": [
+                "all"
+            ],
+            "gridLimits": {
+                "body": {
+                    "maxRows": 20,
+                    "maxCols": 25
+                },
+                "pallu": {
+                    "maxRows": 15,
+                    "maxCols": 15
+                }
+            },
+            "minMotifSpacing": 30
+        },
+        "gujarati": {
+            "displayName": "Gujarati",
+            "allowedMotifs": [
+                "all"
+            ],
+            "gridLimits": {
+                "body": {
+                    "maxRows": 20,
+                    "maxCols": 25
+                },
+                "pallu": {
+                    "maxRows": 15,
+                    "maxCols": 15
+                }
+            },
+            "minMotifSpacing": 30
+        },
+        "south_indian": {
+            "displayName": "South Indian",
+            "allowedMotifs": [
+                "paisley",
+                "flower-bouquet",
+                "leaf-branch"
+            ],
+            "gridLimits": {
+                "body": {
+                    "maxRows": 15,
+                    "maxCols": 20
+                },
+                "pallu": {
+                    "maxRows": 12,
+                    "maxCols": 12
+                }
+            },
+            "minMotifSpacing": 35
+        }
+    }
+}

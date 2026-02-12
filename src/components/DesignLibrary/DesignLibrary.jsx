@@ -7,6 +7,7 @@ import BorderSelector from './BorderSelector';
 import ColorPalette from './ColorPalette';
 import PatternMode from './PatternMode';
 import Tassels from './Tassels';
+import { getSareeTypeRules } from '../../utils/sareeValidator';
 
 function DesignLibrary({
   bodyColor,
@@ -25,11 +26,47 @@ function DesignLibrary({
   setPalluPatternSettings,
   tasselSettings,
   setTasselSettings,
+  bodyCanvasRef,
+  palluCanvasRef,
 }) {
   const handleTemplateSelect = (colors) => {
     setBodyColor(colors.bodyColor);
     setBorderColor(colors.borderColor);
     setPalluColor(colors.palluColor);
+  };
+
+  // Handle incompatible saree type changes
+  const handleIncompatibleSareeTypeChange = ({ newType, incompatibleMotifs, gridViolations }) => {
+    // Remove incompatible motifs
+    if (incompatibleMotifs.length > 0) {
+      const incompatibleIds = incompatibleMotifs.map(m => m.id);
+      setSelectedMotifs(selectedMotifs.filter(m => !incompatibleIds.includes(m.id)));
+    }
+
+    // Adjust grid settings if needed (auto-adjust to fit new saree type limits)
+    if (gridViolations.length > 0) {
+      const rules = getSareeTypeRules(newType);
+
+      // Adjust body grid if needed
+      if (rules?.gridLimits?.body) {
+        const bodyLimits = rules.gridLimits.body;
+        setBodyPatternSettings({
+          ...bodyPatternSettings,
+          rows: Math.min(bodyPatternSettings.rows, bodyLimits.maxRows),
+          cols: Math.min(bodyPatternSettings.cols, bodyLimits.maxCols)
+        });
+      }
+
+      // Adjust pallu grid if needed
+      if (rules?.gridLimits?.pallu) {
+        const palluLimits = rules.gridLimits.pallu;
+        setPalluPatternSettings({
+          ...palluPatternSettings,
+          rows: Math.min(palluPatternSettings.rows, palluLimits.maxRows),
+          cols: Math.min(palluPatternSettings.cols, palluLimits.maxCols)
+        });
+      }
+    }
   };
 
   return (
@@ -38,7 +75,14 @@ function DesignLibrary({
         <h2 className="text-lg font-bold text-gray-800">Design Library</h2>
 
         <Templates onTemplateSelect={handleTemplateSelect} />
-        <SareeType sareeType={sareeType} setSareeType={setSareeType} />
+        <SareeType
+          sareeType={sareeType}
+          setSareeType={setSareeType}
+          bodyCanvasRef={bodyCanvasRef}
+          palluCanvasRef={palluCanvasRef}
+          currentGridSettings={{ body: bodyPatternSettings, pallu: palluPatternSettings }}
+          onIncompatibleChange={handleIncompatibleSareeTypeChange}
+        />
 
 
         {/* Grid Settings for Both Canvases */}
@@ -47,6 +91,7 @@ function DesignLibrary({
           setBodyPatternSettings={setBodyPatternSettings}
           palluPatternSettings={palluPatternSettings}
           setPalluPatternSettings={setPalluPatternSettings}
+          sareeType={sareeType}
         />
 
 
@@ -54,6 +99,7 @@ function DesignLibrary({
           selectedMotifs={selectedMotifs}
           setSelectedMotifs={setSelectedMotifs}
           onMotifDragStart={(motif) => console.log('Dragging:', motif.name)}
+          sareeType={sareeType}
         />
         <PalluSelector />
         <BorderSelector />

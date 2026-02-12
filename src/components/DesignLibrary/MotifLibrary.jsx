@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { getAllMotifs, getCategories } from '../../utils/motifLoader';
+import { getSareeTypeRules } from '../../utils/sareeValidator';
 
-function MotifLibrary({ selectedMotifs, setSelectedMotifs, onMotifDragStart }) {
+function MotifLibrary({ selectedMotifs, setSelectedMotifs, onMotifDragStart, sareeType = 'nivi' }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
 
@@ -10,10 +11,19 @@ function MotifLibrary({ selectedMotifs, setSelectedMotifs, onMotifDragStart }) {
   const allMotifs = getAllMotifs();
   const categories = getCategories();
 
-  // Filter motifs based on selected category
-  const displayedMotifs = selectedCategory === 'all'
+  // Get allowed motifs for current saree type
+  const sareeRules = getSareeTypeRules(sareeType);
+  const allowedMotifs = sareeRules?.allowedMotifs || ['all'];
+
+  // Filter motifs based on selected category AND saree type restrictions
+  let displayedMotifs = selectedCategory === 'all'
     ? allMotifs
     : allMotifs.filter(m => m.category === selectedCategory);
+
+  // Apply saree type filtering (if not "all")
+  if (allowedMotifs[0] !== 'all') {
+    displayedMotifs = displayedMotifs.filter(m => allowedMotifs.includes(m.id));
+  }
 
   const handleDragStart = (e, motif) => {
     e.dataTransfer.effectAllowed = 'copy';
@@ -44,8 +54,8 @@ function MotifLibrary({ selectedMotifs, setSelectedMotifs, onMotifDragStart }) {
             <button
               onClick={() => setSelectedCategory('all')}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${selectedCategory === 'all'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-purple-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
             >
               All ({allMotifs.length})
@@ -55,8 +65,8 @@ function MotifLibrary({ selectedMotifs, setSelectedMotifs, onMotifDragStart }) {
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${selectedCategory === category.id
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
               >
                 {category.name} ({category.count})
