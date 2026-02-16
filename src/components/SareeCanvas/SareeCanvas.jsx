@@ -3,7 +3,7 @@ import { ZoomIn, ZoomOut, Lock, Unlock, RotateCw } from 'lucide-react';
 import MotifCanvas from './MotifCanvas';
 import MiniMap from './MiniMap';
 
-function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setSelectedSection, bodyPatternSettings, palluPatternSettings, tasselSettings }) {
+function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setSelectedSection, bodyPatternSettings, palluPatternSettings, tasselSettings, bodyCanvasRef, palluCanvasRef }) {
   const [zoom, setZoom] = useState(100);
   const [lastTap, setLastTap] = useState(0);
   const containerRef = useRef(null);
@@ -155,8 +155,8 @@ function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setS
     <div
       ref={containerRef}
       className={`flex-1 bg-gray-50 flex items-center justify-center overflow-auto relative ${rotation === 90
-          ? 'py-8 md:py-12 px-4' // Portrait: padding top/bottom and sides
-          : 'py-6 px-4' // Landscape: padding all around
+        ? 'py-8 md:py-12 px-4' // Portrait: padding top/bottom and sides
+        : 'py-6 px-4' // Landscape: padding all around
         }`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -225,8 +225,8 @@ function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setS
       </div>
 
       <div className={`saree-canvas-container w-full max-w-5xl landscape:max-w-4xl ${rotation === 90
-          ? 'max-h-[calc(100vh-12rem)]' // Portrait: limit height to fit viewport
-          : '' // Landscape: no height limit
+        ? 'max-h-[calc(100vh-12rem)]' // Portrait: limit height to fit viewport
+        : '' // Landscape: no height limit
         }`}>
 
         <div
@@ -285,7 +285,7 @@ function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setS
                 <div className="absolute inset-0 pointer-events-none border-r border-black/5"></div>
 
                 <div className="h-full w-full">
-                  <MotifCanvas bodyColor={bodyColor} patternSettings={bodyPatternSettings} />
+                  <MotifCanvas ref={bodyCanvasRef} bodyColor={bodyColor} patternSettings={bodyPatternSettings} />
                 </div>
 
                 {selectedSection === 'body' && (
@@ -305,7 +305,7 @@ function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setS
                 <div className="absolute inset-0 pointer-events-none border-l border-black/5"></div>
 
                 <div className="h-full w-full">
-                  <MotifCanvas bodyColor={palluColor} patternSettings={palluPatternSettings} tasselSettings={tasselSettings} />
+                  <MotifCanvas ref={palluCanvasRef} bodyColor={palluColor} patternSettings={palluPatternSettings} tasselSettings={tasselSettings} />
                 </div>
 
                 {selectedSection === 'pallu' && (

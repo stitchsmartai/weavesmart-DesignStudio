@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { validateGridSettings, getSareeTypeRules } from '../../utils/sareeValidator';
 
-function PatternMode({ bodyPatternSettings, setBodyPatternSettings, palluPatternSettings, setPalluPatternSettings }) {
+function PatternMode({ bodyPatternSettings, setBodyPatternSettings, palluPatternSettings, setPalluPatternSettings, sareeType = 'nivi' }) {
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('body'); // 'body' or 'pallu'
+    const [validationErrors, setValidationErrors] = useState({ body: [], pallu: [] });
 
     const patterns = [
         { id: 'all', name: 'All' },
@@ -88,10 +90,28 @@ function PatternMode({ bodyPatternSettings, setBodyPatternSettings, palluPattern
                                         min="1"
                                         max="20"
                                         value={currentSettings.rows}
-                                        onChange={(e) => setCurrentSettings({
-                                            ...currentSettings,
-                                            rows: parseInt(e.target.value) || 1
-                                        })}
+                                        onChange={(e) => {
+                                            const inputRows = parseInt(e.target.value) || 1;
+
+                                            // Get limits for current saree type and section
+                                            const rules = getSareeTypeRules(sareeType);
+                                            const maxRows = rules?.gridLimits[activeTab]?.maxRows || 20;
+
+                                            // Clamp to max limit
+                                            const newRows = Math.min(inputRows, maxRows);
+
+                                            setCurrentSettings({
+                                                ...currentSettings,
+                                                rows: newRows
+                                            });
+
+                                            // Validate and show warning if user tried to exceed
+                                            const validation = validateGridSettings(sareeType, activeTab, inputRows, currentSettings.cols);
+                                            setValidationErrors({
+                                                ...validationErrors,
+                                                [activeTab]: validation.errors
+                                            });
+                                        }}
                                         className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-purple-500 focus:border-transparent"
                                     />
                                 </div>
@@ -102,10 +122,28 @@ function PatternMode({ bodyPatternSettings, setBodyPatternSettings, palluPattern
                                         min="1"
                                         max="20"
                                         value={currentSettings.cols}
-                                        onChange={(e) => setCurrentSettings({
-                                            ...currentSettings,
-                                            cols: parseInt(e.target.value) || 1
-                                        })}
+                                        onChange={(e) => {
+                                            const inputCols = parseInt(e.target.value) || 1;
+
+                                            // Get limits for current saree type and section
+                                            const rules = getSareeTypeRules(sareeType);
+                                            const maxCols = rules?.gridLimits[activeTab]?.maxCols || 25;
+
+                                            // Clamp to max limit
+                                            const newCols = Math.min(inputCols, maxCols);
+
+                                            setCurrentSettings({
+                                                ...currentSettings,
+                                                cols: newCols
+                                            });
+
+                                            // Validate and show warning if user tried to exceed
+                                            const validation = validateGridSettings(sareeType, activeTab, currentSettings.rows, inputCols);
+                                            setValidationErrors({
+                                                ...validationErrors,
+                                                [activeTab]: validation.errors
+                                            });
+                                        }}
                                         className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-purple-500 focus:border-transparent"
                                     />
                                 </div>
@@ -124,6 +162,15 @@ function PatternMode({ bodyPatternSettings, setBodyPatternSettings, palluPattern
                                     />
                                 </div>
                             </div>
+
+                            {/* Validation Errors */}
+                            {validationErrors[activeTab] && validationErrors[activeTab].length > 0 && (
+                                <div className="bg-red-50 border border-red-200 rounded p-2">
+                                    {validationErrors[activeTab].map((error, idx) => (
+                                        <p key={idx} className="text-xs text-red-600">⚠️ {error}</p>
+                                    ))}
+                                </div>
+                            )}
 
                             {/* Fill Pattern */}
                             <div>

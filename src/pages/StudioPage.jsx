@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Save, Download, LogOut, Upload } from 'lucide-react';
 import DesignLibrary from '../components/DesignLibrary/DesignLibrary';
@@ -6,6 +6,10 @@ import SareeCanvas from '../components/SareeCanvas/SareeCanvas';
 
 function StudioPage() {
   const navigate = useNavigate();
+
+  // Canvas refs for motif validation
+  const bodyCanvasRef = useRef();
+  const palluCanvasRef = useRef();
 
   // Design state
   const [bodyColor, setBodyColor] = useState('#DC2626');
@@ -250,6 +254,8 @@ Ready for 3D export!
                 setPalluPatternSettings={setPalluPatternSettings}
                 tasselSettings={tasselSettings}
                 setTasselSettings={setTasselSettings}
+                bodyCanvasRef={bodyCanvasRef}
+                palluCanvasRef={palluCanvasRef}
               />
             )}
           </div>
@@ -286,6 +292,8 @@ Ready for 3D export!
           bodyPatternSettings={bodyPatternSettings}
           palluPatternSettings={palluPatternSettings}
           tasselSettings={tasselSettings}
+          bodyCanvasRef={bodyCanvasRef}
+          palluCanvasRef={palluCanvasRef}
         />
       </div>
     </div>

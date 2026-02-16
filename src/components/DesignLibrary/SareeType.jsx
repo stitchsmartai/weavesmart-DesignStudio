@@ -1,15 +1,93 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { checkSareeTypeCompatibility, getSareeTypeRules } from '../../utils/sareeValidator';
 
-function SareeType({ sareeType, setSareeType }) {
+function SareeType({ sareeType, setSareeType, bodyCanvasRef, palluCanvasRef, currentGridSettings = {}, onIncompatibleChange }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const types = [
     { id: 'nivi', name: 'Nivi', description: 'Most common' },
     { id: 'bengali', name: 'Bengali', description: 'Atpoure style' },
     { id: 'gujarati', name: 'Gujarati', description: 'Seedha pallu' },
-    { id: 'south', name: 'South Indian', description: 'Madisaar style' },
+    { id: 'south_indian', name: 'South Indian', description: 'Madisaar style' },
   ];
+
+  const handleSareeTypeChange = (newType) => {
+    if (newType === sareeType) return;
+
+    // Get all motifs from both canvases
+    const bodyObjects = bodyCanvasRef.current?.getObjects() || [];
+    const palluObjects = palluCanvasRef.current?.getObjects() || [];
+
+    // Extract motif info from Fabric.js objects
+    const currentMotifs = [...bodyObjects, ...palluObjects]
+      .map(obj => ({
+        id: obj.motifId, // Custom property set when creating motifs
+        fabricObject: obj,
+        section: bodyObjects.includes(obj) ? 'body' : 'pallu'
+      }))
+      .filter(m => m.id); // Only include objects with motifId
+
+    console.log('🔍 Canvas motifs found:', currentMotifs.length, currentMotifs.map(m => m.id));
+
+    // Validate compatibility
+    const compatibility = checkSareeTypeCompatibility(
+      newType,
+      currentMotifs,
+      currentGridSettings
+    );
+
+    console.log('✅ Compatibility result:', compatibility);
+
+    if (compatibility.isCompatible) {
+      // Compatible - switch immediately
+      setSareeType(newType);
+    } else {
+      // Incompatible - show confirmation dialog
+      const typeName = types.find(t => t.id === newType)?.name || newType;
+      let message = `Switching to ${typeName} saree type will cause the following issues:\n\n`;
+
+      if (compatibility.incompatibleMotifs.length > 0) {
+        message += `• ${compatibility.incompatibleMotifs.length} incompatible motif(s) will be removed\n`;
+      }
+
+      if (compatibility.gridViolations.length > 0) {
+        message += `• Grid violations:\n`;
+        compatibility.gridViolations.forEach(violation => {
+          message += `  - ${violation}\n`;
+        });
+      }
+
+      message += `\nDo you want to continue?`;
+
+      const confirmed = window.confirm(message);
+
+      if (confirmed) {
+        // Remove incompatible motifs from canvases
+        compatibility.incompatibleMotifs.forEach(motif => {
+          console.log(`🗑️ Removing incompatible motif: ${motif.id} from ${motif.section}`);
+          if (motif.section === 'body') {
+            bodyCanvasRef.current?.removeObject(motif.fabricObject);
+          } else {
+            palluCanvasRef.current?.removeObject(motif.fabricObject);
+          }
+        });
+
+        // Switch to new saree type
+        setSareeType(newType);
+
+        // Notify parent to handle grid adjustments
+        if (onIncompatibleChange) {
+          onIncompatibleChange({
+            newType,
+            incompatibleMotifs: compatibility.incompatibleMotifs,
+            gridViolations: compatibility.gridViolations
+          });
+        }
+      }
+      // If not confirmed, do nothing (stay on current type)
+    }
+  };
 
   return (
     <div className="border border-gray-200 rounded-lg">
@@ -36,7 +114,7 @@ function SareeType({ sareeType, setSareeType }) {
                 name="sareeType"
                 value={type.id}
                 checked={sareeType === type.id}
-                onChange={(e) => setSareeType(e.target.value)}
+                onChange={(e) => handleSareeTypeChange(e.target.value)}
                 className="w-4 h-4 text-purple-600 focus:ring-purple-500"
               />
               <div className="flex-1">
