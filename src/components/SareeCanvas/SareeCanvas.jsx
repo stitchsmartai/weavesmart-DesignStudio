@@ -1,58 +1,9 @@
-import { useState, useRef, useEffect } from "react";
-import { ZoomIn, ZoomOut, Lock, Unlock, RotateCw, Trash2 } from "lucide-react";
-import MotifCanvas from "./MotifCanvas";
-import MiniMap from "./MiniMap";
+import { useState, useRef, useEffect } from 'react';
+import { ZoomIn, ZoomOut, Lock, Unlock, RotateCw } from 'lucide-react';
+import MotifCanvas from './MotifCanvas';
+import MiniMap from './MiniMap';
 
-function SareeCanvas({
-  bodyColor,
-  borderColor,
-  palluColor,
-  selectedSection,
-  setSelectedSection,
-}) {
-  // STEP 2: Separate state for body and pallu
-  const [selectedMotifBody, setSelectedMotifBody] = useState(null);
-  const [selectedMotifPallu, setSelectedMotifPallu] = useState(null);
-  const [motifCountBody, setMotifCountBody] = useState(0);
-  const [motifCountPallu, setMotifCountPallu] = useState(0);
-
-  // Global UI states
-  const [showInstructions, setShowInstructions] = useState(() => {
-    const saved = localStorage.getItem("hideMotifInstructions");
-    return saved !== "true";
-  });
-
-  // Determine which motif is selected based on active section
-  const selectedMotif =
-    selectedSection === "body"
-      ? selectedMotifBody
-      : selectedSection === "pallu"
-      ? selectedMotifPallu
-      : null;
-
-  const motifCount = motifCountBody + motifCountPallu;
-
-  // STEP 3: Event handlers for body canvas
-  const handleBodySelectionChange = (motif) => {
-    setSelectedMotifBody(motif);
-  };
-
-  const handleBodyMotifCountChange = (count) => {
-    setMotifCountBody(count);
-  };
-
-  // STEP 3: Event handlers for pallu canvas
-  const handlePalluSelectionChange = (motif) => {
-    setSelectedMotifPallu(motif);
-  };
-
-  const handlePalluMotifCountChange = (count) => {
-    setMotifCountPallu(count);
-  };
-
-  // Refs to store canvas actions exposed from MotifCanvas
-  const bodyActionsRef = useRef(null);
-  const palluActionsRef = useRef(null);
+function SareeCanvas({ bodyColor, borderColor, palluColor, selectedSection, setSelectedSection, bodyPatternSettings, palluPatternSettings, tasselSettings }) {
   const [zoom, setZoom] = useState(100);
   const [lastTap, setLastTap] = useState(0);
   const containerRef = useRef(null);
@@ -64,8 +15,8 @@ function SareeCanvas({
   const [rotation, setRotation] = useState(0); // 0 = horizontal, 90 = vertical
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
-  const [isMiniMapExpanded, setIsMiniMapExpanded] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [isMiniMapExpanded, setIsMiniMapExpanded] = useState(false);
 
   // Auto-collapse mini-map when zoom resets to 100%
   useEffect(() => {
@@ -74,33 +25,16 @@ function SareeCanvas({
     }
   }, [zoom]);
 
-  // Keyboard Delete support for selected motif
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "Delete" && selectedMotif) {
-        const actions =
-          selectedSection === "body"
-            ? bodyActionsRef.current
-            : palluActionsRef.current;
-
-        actions?.deleteSelected();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedMotif, selectedSection]);
-
   // Handle zoom in/out with buttons
   const handleZoomIn = () => {
     if (!isZoomLocked) {
-      setZoom((prev) => Math.min(prev + 10, 200));
+      setZoom(prev => Math.min(prev + 10, 200));
     }
   };
 
   const handleZoomOut = () => {
     if (!isZoomLocked) {
-      setZoom((prev) => Math.max(prev - 10, 50));
+      setZoom(prev => Math.max(prev - 10, 50));
     }
   };
 
@@ -117,7 +51,7 @@ function SareeCanvas({
 
   const toggleRotation = () => {
     if (!isZoomLocked) {
-      setRotation((prev) => (prev + 90) % 180); // Toggle between 0 and 90
+      setRotation(prev => (prev + 90) % 180); // Toggle between 0 and 90
     }
   };
 
@@ -187,7 +121,7 @@ function SareeCanvas({
     if (isPanning && zoom > 100 && !isZoomLocked) {
       setPanOffset({
         x: e.clientX - panStart.x,
-        y: e.clientY - panStart.y,
+        y: e.clientY - panStart.y
       });
     }
   };
@@ -202,7 +136,7 @@ function SareeCanvas({
       setIsPanning(true);
       setPanStart({
         x: e.touches[0].clientX - panOffset.x,
-        y: e.touches[0].clientY - panOffset.y,
+        y: e.touches[0].clientY - panOffset.y
       });
     }
   };
@@ -212,7 +146,7 @@ function SareeCanvas({
       e.preventDefault();
       setPanOffset({
         x: e.touches[0].clientX - panStart.x,
-        y: e.touches[0].clientY - panStart.y,
+        y: e.touches[0].clientY - panStart.y
       });
     }
   };
@@ -220,9 +154,10 @@ function SareeCanvas({
   return (
     <div
       ref={containerRef}
-      className={`flex-1 bg-gray-50 flex items-center justify-center overflow-auto relative ${
-        rotation === 90 ? "py-16" : "py-4"
-      }`}
+      className={`flex-1 bg-gray-50 flex items-center justify-center overflow-auto relative ${rotation === 90
+          ? 'py-8 md:py-12 px-4' // Portrait: padding top/bottom and sides
+          : 'py-6 px-4' // Landscape: padding all around
+        }`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -237,9 +172,7 @@ function SareeCanvas({
       `}>
         <button
           onClick={handleZoomIn}
-          className={`p-1.5 md:p-2 hover:bg-gray-100 rounded transition flex-shrink-0 ${
-            isZoomLocked ? "opacity-50 cursor-not-allowed" : ""
-          }`}
+          className={`p-1.5 md:p-2 hover:bg-gray-100 rounded transition flex-shrink-0 ${isZoomLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
           title="Zoom In"
           disabled={isZoomLocked}
         >
@@ -248,9 +181,7 @@ function SareeCanvas({
 
         <button
           onClick={handleZoomOut}
-          className={`p-1.5 md:p-2 hover:bg-gray-100 rounded transition flex-shrink-0 ${
-            isZoomLocked ? "opacity-50 cursor-not-allowed" : ""
-          }`}
+          className={`p-1.5 md:p-2 hover:bg-gray-100 rounded transition flex-shrink-0 ${isZoomLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
           title="Zoom Out"
           disabled={isZoomLocked}
         >
@@ -263,9 +194,7 @@ function SareeCanvas({
 
         <button
           onClick={handleResetZoom}
-          className={`text-xs px-1.5 md:px-2 py-1 hover:bg-gray-100 rounded transition text-gray-600 flex-shrink-0 ${
-            isZoomLocked ? "opacity-50 cursor-not-allowed" : ""
-          }`}
+          className={`text-xs px-1.5 md:px-2 py-1 hover:bg-gray-100 rounded transition text-gray-600 flex-shrink-0 ${isZoomLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
           title="Reset Zoom"
           disabled={isZoomLocked}
         >
@@ -278,28 +207,16 @@ function SareeCanvas({
         {/* Zoom Lock Button */}
         <button
           onClick={toggleZoomLock}
-          className={`p-1.5 md:p-2 rounded transition flex-shrink-0 ${
-            isZoomLocked
-              ? "bg-purple-100 text-purple-700"
-              : "hover:bg-gray-100 text-gray-700"
-          }`}
+          className={`p-1.5 md:p-2 rounded transition flex-shrink-0 ${isZoomLocked ? 'bg-purple-100 text-purple-700' : 'hover:bg-gray-100 text-gray-700'}`}
           title={isZoomLocked ? "Unlock Zoom" : "Lock Zoom"}
         >
-          {isZoomLocked ? (
-            <Lock className="w-4 h-4 md:w-5 md:h-5" />
-          ) : (
-            <Unlock className="w-4 h-4 md:w-5 md:h-5" />
-          )}
+          {isZoomLocked ? <Lock className="w-4 h-4 md:w-5 md:h-5" /> : <Unlock className="w-4 h-4 md:w-5 md:h-5" />}
         </button>
 
         {/* Rotation Button */}
         <button
           onClick={toggleRotation}
-          className={`p-1.5 md:p-2 rounded transition flex-shrink-0 ${
-            isZoomLocked
-              ? "opacity-50 cursor-not-allowed text-gray-400"
-              : "hover:bg-gray-100 text-gray-700"
-          }`}
+          className={`p-1.5 md:p-2 rounded transition flex-shrink-0 ${isZoomLocked ? 'opacity-50 cursor-not-allowed text-gray-400' : 'hover:bg-gray-100 text-gray-700'}`}
           title={rotation === 0 ? "Rotate to Vertical" : "Rotate to Horizontal"}
           disabled={isZoomLocked}
         >
@@ -307,12 +224,14 @@ function SareeCanvas({
         </button>
       </div>
 
-      <div className="saree-canvas-container w-full px-4 md:px-4 max-w-5xl landscape:max-w-4xl">
+      <div className={`saree-canvas-container w-full max-w-5xl landscape:max-w-4xl ${rotation === 90
+          ? 'max-h-[calc(100vh-12rem)]' // Portrait: limit height to fit viewport
+          : '' // Landscape: no height limit
+        }`}>
+
         <div
           ref={canvasWrapperRef}
-          className={`bg-white rounded-xl shadow-2xl overflow-hidden ${
-            zoom > 100 ? "cursor-grab active:cursor-grabbing" : ""
-          }`}
+          className={`bg-white rounded-xl shadow-2xl overflow-visible ${zoom > 100 ? 'cursor-grab active:cursor-grabbing' : ''}`}
           onClick={handleDoubleTap}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -327,31 +246,25 @@ function SareeCanvas({
             handleTouchMovePan(e);
           }}
           style={{
-            transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${
-              zoom / 100
-            }) rotate(${rotation}deg)`,
-            transformOrigin: "center center",
-            transition:
-              isPinching || isPanning ? "none" : "transform 0.3s ease-out",
+            transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom / 100}) rotate(${rotation}deg)`,
+            transformOrigin: 'center center',
+            transition: isPinching || isPanning ? 'none' : 'transform 0.3s ease-out',
           }}
         >
           {/* Saree Visualization - Increased Height */}
           <div
             className="w-full relative flex flex-col shadow-lg border-2 border-gray-100"
-            style={{ aspectRatio: "5/2.2" }}
+            style={{ aspectRatio: '5/2.2' }}
           >
             {/* Top Border (10% Height) */}
             <div
-              style={{ height: "10%", backgroundColor: borderColor }}
-              className={`w-full relative group cursor-pointer transition-colors hover:brightness-110 ${
-                selectedSection === "border"
-                  ? "ring-4 ring-purple-600 ring-inset z-10"
-                  : ""
-              }`}
-              onClick={() => setSelectedSection("border")}
+              style={{ height: '10%', backgroundColor: borderColor }}
+              className={`w-full relative group cursor-pointer transition-colors hover:brightness-110 ${selectedSection === 'border' ? 'ring-4 ring-purple-600 ring-inset z-10' : ''
+                }`}
+              onClick={() => setSelectedSection('border')}
               title="Top Border"
             >
-              {selectedSection === "border" && (
+              {selectedSection === 'border' && (
                 <div className="absolute left-2 top-1/2 -translate-y-1/2 bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm">
                   Border
                 </div>
@@ -359,36 +272,24 @@ function SareeCanvas({
             </div>
 
             {/* Middle Row (80% Height) */}
-            <div className="flex w-full" style={{ height: "80%" }}>
+            <div className="flex w-full" style={{ height: '80%' }}>
+
               {/* Body Section (75% Width) - Contains MotifCanvas */}
               <div
-                style={{ width: "75%" }}
-                className={`h-full relative group transition-all ${
-                  selectedSection === "body"
-                    ? "ring-4 ring-purple-600 ring-inset z-10"
-                    : ""
-                }`}
-                onClick={() => setSelectedSection("body")}
+                style={{ width: '75%' }}
+                className={`h-full relative group transition-all ${selectedSection === 'body' ? 'ring-4 ring-purple-600 ring-inset z-10' : ''
+                  }`}
+                onClick={() => setSelectedSection('body')}
               >
                 {/* Only allow clicks on the container to select the section, MotifCanvas handles its own interactions */}
                 <div className="absolute inset-0 pointer-events-none border-r border-black/5"></div>
 
-                <div className="h-full w-full body-canvas-container">
-                  <MotifCanvas
-                    bodyColor={bodyColor}
-                    onSelectionChange={(motif) => {
-                      setSelectedSection("body");
-                      handleBodySelectionChange(motif);
-                    }}
-                    onMotifCountChange={handleBodyMotifCountChange}
-                    exposeActions={(actions) =>
-                      (bodyActionsRef.current = actions)
-                    }
-                  />
+                <div className="h-full w-full">
+                  <MotifCanvas bodyColor={bodyColor} patternSettings={bodyPatternSettings} />
                 </div>
 
-                {selectedSection === "body" && (
-                  <div className="absolute top-2 right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded shadow-lg z-20 pointer-events-none">
+                {selectedSection === 'body' && (
+                  <div className="absolute top-2 left-2 bg-purple-600/80 backdrop-blur-sm text-white text-[10px] px-2 py-0.5 rounded shadow-md z-20 pointer-events-none">
                     Body
                   </div>
                 )}
@@ -396,32 +297,19 @@ function SareeCanvas({
 
               {/* Pallu Section (25% Width) */}
               <div
-                style={{ width: "25%" }}
-                className={`h-full relative group transition-all ${
-                  selectedSection === "pallu"
-                    ? "ring-4 ring-purple-600 ring-inset z-10"
-                    : ""
-                }`}
-                onClick={() => setSelectedSection("pallu")}
+                style={{ width: '25%' }}
+                className={`h-full relative group transition-all ${selectedSection === 'pallu' ? 'ring-4 ring-purple-600 ring-inset z-10' : ''
+                  }`}
+                onClick={() => setSelectedSection('pallu')}
               >
                 <div className="absolute inset-0 pointer-events-none border-l border-black/5"></div>
 
-                <div className="h-full w-full pallu-canvas-container">
-                  <MotifCanvas
-                    bodyColor={palluColor}
-                    onSelectionChange={(motif) => {
-                      setSelectedSection("pallu");
-                      handlePalluSelectionChange(motif);
-                    }}
-                    onMotifCountChange={handlePalluMotifCountChange}
-                    exposeActions={(actions) =>
-                      (palluActionsRef.current = actions)
-                    }
-                  />
+                <div className="h-full w-full">
+                  <MotifCanvas bodyColor={palluColor} patternSettings={palluPatternSettings} tasselSettings={tasselSettings} />
                 </div>
 
-                {selectedSection === "pallu" && (
-                  <div className="absolute top-2 right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded shadow-lg z-20 pointer-events-none">
+                {selectedSection === 'pallu' && (
+                  <div className="absolute top-2 right-2 bg-purple-600/80 backdrop-blur-sm text-white text-[10px] px-2 py-0.5 rounded shadow-md z-20 pointer-events-none">
                     Pallu
                   </div>
                 )}
@@ -430,118 +318,34 @@ function SareeCanvas({
 
             {/* Bottom Border (10% Height) */}
             <div
-              style={{ height: "10%", backgroundColor: borderColor }}
-              className={`w-full relative group cursor-pointer transition-colors hover:brightness-110 ${
-                selectedSection === "border"
-                  ? "ring-4 ring-purple-600 ring-inset z-10"
-                  : ""
-              }`}
-              onClick={() => setSelectedSection("border")}
+              style={{ height: '10%', backgroundColor: borderColor }}
+              className={`w-full relative group cursor-pointer transition-colors hover:brightness-110 ${selectedSection === 'border' ? 'ring-4 ring-purple-600 ring-inset z-10' : ''
+                }`}
+              onClick={() => setSelectedSection('border')}
               title="Bottom Border"
             >
-              {selectedSection === "border" && (
+              {selectedSection === 'border' && (
                 <div className="absolute left-2 top-1/2 -translate-y-1/2 bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm">
                   Border
                 </div>
               )}
             </div>
+
           </div>
         </div>
       </div>
 
-      {/* STEP 4: Global UI Layer - Outside canvas containers */}
-
-      {/* Instructions Popup */}
-      {selectedMotif && showInstructions && (
-        <div className="fixed bottom-24 right-6 z-50 bg-white border border-purple-200 rounded-xl shadow-2xl px-5 py-4 text-sm text-gray-700 max-w-xs">
-          <div className="flex items-start space-x-3">
-            <span className="text-lg">💡</span>
-            <div className="flex-1">
-              <p className="font-semibold text-gray-800 mb-1">Motif Controls</p>
-              <p className="text-xs text-gray-600 leading-relaxed">
-                Drag corners to resize • Drag to move • Delete key to remove
-              </p>
-              <div className="mt-3 flex justify-between items-center">
-                <button
-                  onClick={() => {
-                    localStorage.setItem("hideMotifInstructions", "true");
-                    setShowInstructions(false);
-                  }}
-                  className="text-xs text-purple-600 hover:text-purple-700 font-medium"
-                >
-                  Don't show again
-                </button>
-                <button
-                  onClick={() => setShowInstructions(false)}
-                  className="text-gray-400 hover:text-gray-600 text-lg leading-none"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Button - Bottom Right */}
-      {selectedMotif && (
-        <div className="fixed bottom-32 md:bottom-6 left-1/2 md:left-auto -translate-x-1/2 md:translate-x-0 right-auto md:right-6 z-[60] bg-purple-600 rounded-lg shadow-xl px-4 py-3">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => {
-                const actions =
-                  selectedSection === "body"
-                    ? bodyActionsRef.current
-                    : palluActionsRef.current;
-
-                actions?.deleteSelected();
-              }}
-              className="text-white hover:bg-purple-700 p-2 rounded transition"
-              title="Delete Motif"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
-
-            <div className="border-l border-purple-400 h-6"></div>
-
-            {/* Color Picker */}
-            <div className="relative flex items-center">
-              <input
-                type="color"
-                onChange={(e) => {
-                  const color = e.target.value;
-                  const actions =
-                    selectedSection === "body"
-                      ? bodyActionsRef.current
-                      : palluActionsRef.current;
-
-                  actions?.colorSelected(color);
-                }}
-                className="w-9 h-9 md:w-8 md:h-8 rounded cursor-pointer border-2 border-white bg-white"
-                style={{ WebkitAppearance: "none" }}
-                title="Change Motif Color"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Motif Count Badge */}
-      {motifCount > 0 && (
-        <div className="fixed top-4 left-4 z-50 bg-purple-600 text-white text-xs px-3 py-1 rounded-full shadow-lg">
-          {motifCount} motif{motifCount !== 1 ? "s" : ""}
-        </div>
-      )}
-
-      {/* Mini Map — visible only when zoomed in */}
+      {/* Mini-Map Navigation - Only show when zoomed in */}
       {zoom > 100 && (
         <MiniMap
           zoom={zoom}
           panOffset={panOffset}
           rotation={rotation}
-          onNavigate={({ x, y }) => setPanOffset({ x, y })}
           expanded={isMiniMapExpanded}
           setExpanded={setIsMiniMapExpanded}
+          onNavigate={(newPanOffset) => {
+            setPanOffset(newPanOffset);
+          }}
         />
       )}
     </div>
